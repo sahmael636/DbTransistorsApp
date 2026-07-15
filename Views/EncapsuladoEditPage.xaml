@@ -1,0 +1,90 @@
+<!-- Views/EncapsuladoEditPage.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             x:Class="DbTransistorsApp.Views.EncapsuladoEditPage"
+             x:DataType="viewmodels:EncapsuladoEditViewModel"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="15">
+
+            <!-- Nombre -->
+            <Label Text="Nombre del encapsulado *" 
+                   FontSize="14" 
+                   FontAttributes="Bold"/>
+
+            <Entry Text="{Binding Nombre}"
+                   Placeholder="Ej: TO-92, SOT-23, DIP-8"
+                   BackgroundColor="White"
+                   FontSize="16"/>
+
+            <!-- Imagen -->
+            <Label Text="Imagen" 
+                   FontSize="14" 
+                   FontAttributes="Bold"/>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Entry Grid.Column="0"
+                       Text="{Binding Imagen}"
+                       Placeholder="Nombre del archivo de imagen"
+                       IsReadOnly="True"
+                       BackgroundColor="#F5F5F5"/>
+
+                <Button Grid.Column="1"
+                        Text="📁 Seleccionar"
+                        BackgroundColor="#2196F3"
+                        TextColor="White"
+                        Command="{Binding SelectImageCommand}"/>
+            </Grid>
+
+            <!-- Vista previa de la imagen -->
+            <Border Margin="0,5" 
+                    Padding="10"
+                    BackgroundColor="#F5F5F5">
+                <StackLayout>
+                    <Label Text="Vista previa" 
+                           FontSize="12" 
+                           TextColor="Gray"/>
+
+                    <Image Source="{Binding ImagenPreview}" 
+                           Aspect="AspectFit"
+                           HeightRequest="150"
+                           HorizontalOptions="Center">
+                        <Image.Triggers>
+                            <DataTrigger TargetType="Image"
+                                         Binding="{Binding ImagenPreview}"
+                                         Value="{x:Null}">
+                                <Setter Property="Source" Value="no_image.png"/>
+                            </DataTrigger>
+                            <DataTrigger TargetType="Image"
+                                         Binding="{Binding ImagenPreview}"
+                                         Value="">
+                                <Setter Property="Source" Value="no_image.png"/>
+                            </DataTrigger>
+                        </Image.Triggers>
+                    </Image>
+                </StackLayout>
+            </Border>
+
+            <!-- Botones -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,20,0,0">
+                <Button Grid.Column="0"
+                        Text="Cancelar"
+                        BackgroundColor="#FF5722"
+                        TextColor="White"
+                        FontSize="16"
+                        Command="{Binding CancelCommand}"/>
+
+                <Button Grid.Column="1"
+                        Text="Guardar"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        FontSize="16"
+                        Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
+            </Grid>
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

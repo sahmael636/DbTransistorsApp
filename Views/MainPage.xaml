@@ -1,0 +1,161 @@
+<!-- Views/MainPage.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             x:Class="DbTransistorsApp.Views.MainPage"
+             x:DataType="viewmodels:MainViewModel">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barra superior -->
+        <Border Grid.Row="0" 
+                BackgroundColor="#2196F3"
+                Padding="15,10"
+                StrokeThickness="0">
+            <Grid>
+                <Label Text="🔍 Transistor Database" 
+                       TextColor="White" 
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"/>
+
+                <Button Grid.Row="0"
+                        Text="🔍 Buscar" 
+                        BackgroundColor="Transparent"
+                        TextColor="White"
+                        FontSize="16"
+                        Command="{Binding NavigateToSearchCommand}"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Grid de botones -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Always">
+            <Grid Padding="10" RowSpacing="10" ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Botones de transistores -->
+                <Button Grid.Row="0" Grid.Column="0"
+                        Text="🧪 Bipolar Germanium"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[0]}"/>
+
+                <Button Grid.Row="0" Grid.Column="1"
+                        Text="🧪 Bipolar Silicio"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[1]}"/>
+
+                <Button Grid.Row="1" Grid.Column="0"
+                        Text="⚡ Pre-biased Bipolar"
+                        BackgroundColor="#FF9800"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[2]}"/>
+
+                <Button Grid.Row="1" Grid.Column="1"
+                        Text="⚡ Dual Bipolar Silicio"
+                        BackgroundColor="#FF9800"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[3]}"/>
+
+                <Button Grid.Row="2" Grid.Column="0"
+                        Text="⚡ Dual Pre-biased"
+                        BackgroundColor="#FF9800"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[4]}"/>
+
+                <Button Grid.Row="2" Grid.Column="1"
+                        Text="🔬 JFET"
+                        BackgroundColor="#9C27B0"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[5]}"/>
+
+                <Button Grid.Row="3" Grid.Column="0"
+                        Text="🔬 MOSFET"
+                        BackgroundColor="#9C27B0"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[6]}"/>
+
+                <Button Grid.Row="3" Grid.Column="1"
+                        Text="🔬 Dual MOSFET"
+                        BackgroundColor="#9C27B0"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[7]}"/>
+
+                <Button Grid.Row="4" Grid.Column="0"
+                        Text="⚙️ IGBT"
+                        BackgroundColor="#F44336"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[8]}"/>
+
+                <Button Grid.Row="4" Grid.Column="1"
+                        Text="⚙️ Dual IGBT"
+                        BackgroundColor="#F44336"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToTableCommand}"
+                        CommandParameter="{Binding TableButtons[9]}"/>
+
+                <!-- Botones de administración -->
+                <Button Grid.Row="5" Grid.Column="0"
+                        Text="🔍 Buscar por Nombre"
+                        BackgroundColor="#2196F3"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToSearchCommand}"/>
+
+                <Button Grid.Row="5" Grid.Column="1"
+                        Text="📦 Encapsulados"
+                        BackgroundColor="#607D8B"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToEncapsuladosCommand}"/>
+
+                <Button Grid.Row="6" Grid.Column="0"
+                        Text="🏗️ Estructuras"
+                        BackgroundColor="#607D8B"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding NavigateToEstructurasCommand}"/>
+            </Grid>
+        </ScrollView>
+    </Grid>
+</ContentPage>

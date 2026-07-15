@@ -1,0 +1,11 @@
+<!-- Resources/Styles/Converters.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:converters="clr-namespace:DbTransistorsApp.Converters">
+
+    <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    <converters:IsSelectedConverter x:Key="IsSelectedConverter"/>
+    <converters:NullableToBoolConverter x:Key="NullableToBoolConverter"/>
+
+</ResourceDictionary>

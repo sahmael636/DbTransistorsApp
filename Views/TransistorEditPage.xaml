@@ -1,0 +1,161 @@
+<!-- Views/TransistorEditPage.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             x:Class="DbTransistorsApp.Views.TransistorEditPage"
+             x:DataType="viewmodels:TransistorEditViewModel"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="15">
+
+            <!-- Nombre -->
+            <Label Text="Nombre del transistor *" 
+                   FontSize="14" 
+                   FontAttributes="Bold"/>
+
+            <Entry Text="{Binding Name}"
+                   Placeholder="Ej: C945, 2N2222, IRF540"
+                   BackgroundColor="White"
+                   FontSize="16"/>
+
+            <!-- Parámetros -->
+            <Label Text="📊 Parámetros" 
+                   FontSize="16" 
+                   FontAttributes="Bold"
+                   Margin="0,10,0,5"/>
+
+            <CollectionView ItemsSource="{Binding Parameters}"
+                            ItemsLayout="VerticalGrid, 2">
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="viewmodels:ParameterField">
+                        <Border Padding="5" StrokeThickness="0">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                                <Label Grid.Row="0" 
+                                       Text="{Binding DisplayName}" 
+                                       FontSize="12" 
+                                       FontAttributes="Bold">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label"
+                                                     Binding="{Binding IsRequired}"
+                                                     Value="True">
+                                            <Setter Property="Text" 
+                                                    Value="{Binding DisplayName, StringFormat='{0} *'}"/>
+                                            <Setter Property="TextColor" 
+                                                    Value="#F44336"/>
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                                    <Entry Grid.Column="0"
+                                           Text="{Binding Value}"
+                                           Keyboard="Numeric"
+                                           FontSize="14"
+                                           BackgroundColor="White"
+                                           HorizontalOptions="Fill"
+                                           Placeholder="Valor"/>
+
+                                    <Label Grid.Column="1" 
+                                           Text="{Binding Unit}" 
+                                           FontSize="12" 
+                                           TextColor="Gray"
+                                           Margin="5,0,0,0"
+                                           VerticalOptions="Center"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Estructura -->
+            <Label Text="🏗️ Estructura *" 
+                   FontSize="14" 
+                   FontAttributes="Bold"
+                   Margin="0,10,0,5"/>
+
+            <CollectionView ItemsSource="{Binding Estructuras}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelectedEstructura}">
+
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Horizontal" 
+                                     Span="3"
+                                     HorizontalItemSpacing="5"
+                                     VerticalItemSpacing="5"/>
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Estructura">
+                        <Border Padding="10,5" 
+                                StrokeThickness="1"
+                                Stroke="{Binding BorderColor}"
+                                BackgroundColor="{Binding BackgroundColor}">
+
+                            <Label Text="{Binding Nombre}" 
+                                   FontSize="12"
+                                   HorizontalOptions="Center"/>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Encapsulados -->
+            <Label Text="📦 Encapsulados *" 
+                   FontSize="14" 
+                   FontAttributes="Bold"
+                   Margin="0,10,0,5"/>
+
+            <CollectionView ItemsSource="{Binding AllEncapsulados}"
+                            SelectionMode="None">
+
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Horizontal" 
+                                     Span="2"
+                                     HorizontalItemSpacing="5"
+                                     VerticalItemSpacing="5"/>
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Encapsulado">
+                        <Border Padding="10,5" 
+                                StrokeThickness="1"
+                                Stroke="{Binding BorderColor}"
+                                BackgroundColor="{Binding BackgroundColor}">
+
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorEditViewModel}}, Path=ToggleEncapsuladoCommand}"
+                                                      CommandParameter="{Binding .}"/>
+                            </Grid.GestureRecognizers>
+
+                            <Label Text="{Binding Nombre}" 
+                                   FontSize="12"
+                                   HorizontalOptions="Center"/>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Botones -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,20,0,0">
+                <Button Grid.Column="0"
+                        Text="Cancelar"
+                        BackgroundColor="#FF5722"
+                        TextColor="White"
+                        FontSize="16"
+                        Command="{Binding CancelCommand}"/>
+
+                <Button Grid.Column="1"
+                        Text="Guardar"
+                        BackgroundColor="#4CAF50"
+                        TextColor="White"
+                        FontSize="16"
+                        Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
+            </Grid>
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

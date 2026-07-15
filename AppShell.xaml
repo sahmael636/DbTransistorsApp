@@ -1,0 +1,23 @@
+<!-- AppShell.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:DbTransistorsApp.Views"
+       x:Class="DbTransistorsApp.AppShell">
+
+    <ShellItem>
+        <ShellContent Route="MainPage" ContentTemplate="{DataTemplate views:MainPage}" />
+    </ShellItem>
+
+    <!-- Rutas para páginas -->
+    <ShellContent Route="SearchPage" ContentTemplate="{DataTemplate views:SearchPage}" />
+    <ShellContent Route="TransistorListPage" ContentTemplate="{DataTemplate views:TransistorListPage}" />
+    <ShellContent Route="TransistorDetailPage" ContentTemplate="{DataTemplate views:TransistorDetailPage}" />
+    <ShellContent Route="EncapsuladosPage" ContentTemplate="{DataTemplate views:EncapsuladosPage}" />
+    <ShellContent Route="EncapsuladoEditPage" ContentTemplate="{DataTemplate views:EncapsuladoEditPage}" />
+    <ShellContent Route="EstructurasPage" ContentTemplate="{DataTemplate views:EstructurasPage}" />
+    <ShellContent Route="TransistorEditPage" ContentTemplate="{DataTemplate views:TransistorEditPage}" />
+
+    <!-- Popup de imagen -->
+    <ShellContent Route="ImagePopup" ContentTemplate="{DataTemplate views:ImagePopup}" />
+</Shell>

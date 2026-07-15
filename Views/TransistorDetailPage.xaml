@@ -1,0 +1,220 @@
+<!-- Views/TransistorDetailPage.xaml -->
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             x:Class="DbTransistorsApp.Views.TransistorDetailPage"
+             x:DataType="viewmodels:TransistorDetailViewModel"
+             Title="Transistor {Binding TransistorName}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollView Grid.Row="0" Grid.RowSpan="2">
+            <StackLayout Padding="15" Spacing="10">
+
+                <!-- Encabezado del transistor -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" 
+                           Text="{Binding TransistorName}" 
+                           FontSize="22" 
+                           FontAttributes="Bold"
+                           VerticalOptions="Center"/>
+
+                    <Button Grid.Column="1"
+                            Text="Defecto"
+                            BackgroundColor="#FF9800"
+                            TextColor="White"
+                            Command="{Binding ResetToDefaultCommand}"
+                            VerticalOptions="Center"/>
+                </Grid>
+
+                <Label Text="{Binding TransistorType}" 
+                       FontSize="14" 
+                       TextColor="Gray"/>
+
+                <Label Text="{Binding TransistorStructure, StringFormat='Estructura: {0}'}" 
+                       FontSize="14" 
+                       TextColor="Gray"/>
+
+                <BoxView HeightRequest="1" Color="#E0E0E0"/>
+
+                <!-- Parámetros editables -->
+                <Label Text="📊 Parámetros" 
+                       FontSize="16" 
+                       FontAttributes="Bold"
+                       Margin="0,10,0,5"/>
+
+                <CollectionView ItemsSource="{Binding Parameters}"
+                                ItemsLayout="VerticalGrid, 2">
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="viewmodels:TransistorParameter">
+                            <Border Padding="5" StrokeThickness="0">
+                                <Grid RowDefinitions="Auto,Auto" RowSpacing="2">
+                                    <Label Grid.Row="0" 
+                                           Text="{Binding DisplayName}" 
+                                           FontSize="12" 
+                                           FontAttributes="Bold"/>
+
+                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                                        <Entry Grid.Column="0"
+                                               Text="{Binding Value}"
+                                               Keyboard="Numeric"
+                                               FontSize="14"
+                                               BackgroundColor="White"
+                                               HorizontalOptions="Fill">
+                                            <Entry.Behaviors>
+                                                <toolkit:EventToCommandBehavior EventName="TextChanged"
+                                                                               Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorDetailViewModel}}, Path=ParameterChangedCommand}"
+                                                                               CommandParameter="{Binding Name}"/>
+                                            </Entry.Behaviors>
+                                        </Entry>
+
+                                        <Label Grid.Column="1" 
+                                               Text="{Binding Unit}" 
+                                               FontSize="12" 
+                                               TextColor="Gray"
+                                               Margin="5,0,0,0"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Encapsulado -->
+                <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,10,0,5"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" 
+                           Text="{Binding Encapsulado, StringFormat='📦 Encapsulado: {0}'}" 
+                           FontSize="14" 
+                           FontAttributes="Bold"
+                           VerticalOptions="Center"/>
+
+                    <Button Grid.Column="1"
+                            Text="Ver Imagen"
+                            BackgroundColor="#4CAF50"
+                            TextColor="White"
+                            FontSize="12"
+                            Command="{Binding ShowEncapsuladoImageCommand}"
+                            IsVisible="{Binding HasEncapsuladoImage}"/>
+                </Grid>
+
+                <!-- Reemplazos -->
+                <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,10,0,5"/>
+
+                <Label Text="🔄 Reemplazos disponibles" 
+                       FontSize="16" 
+                       FontAttributes="Bold"
+                       Margin="0,5,0,5"/>
+
+                <Label Text="{Binding ReplacementCount, StringFormat='{0} transistores compatibles'}" 
+                       FontSize="12" 
+                       TextColor="Gray"/>
+
+                <!-- Tabla de reemplazos -->
+                <CollectionView ItemsSource="{Binding Replacements}"
+                                HeightRequest="300">
+
+                    <CollectionView.Header>
+                        <Grid Padding="5" 
+                              BackgroundColor="#E3F2FD"
+                              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Label Grid.Column="0" Text="Nombre" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="1" Text="Pc" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="2" Text="VCE" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="3" Text="VCB" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="4" Text="IC" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="5" Text="Ft" FontAttributes="Bold" FontSize="12"/>
+                            <Label Grid.Column="6" Text="Hfe" FontAttributes="Bold" FontSize="12"/>
+                        </Grid>
+                    </CollectionView.Header>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="5" 
+                                  ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
+                                  BackgroundColor="{Binding BackgroundColor}">
+
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorDetailViewModel}}, Path=SelectReplacementCommand}"
+                                                          CommandParameter="{Binding .}"/>
+                                </Grid.GestureRecognizers>
+
+                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12"/>
+                                <Label Grid.Column="1" Text="{Binding Pc}" FontSize="12" HorizontalOptions="Center"/>
+                                <Label Grid.Column="2" Text="{Binding Vce}" FontSize="12" HorizontalOptions="Center"/>
+                                <Label Grid.Column="3" Text="{Binding Vcb}" FontSize="12" HorizontalOptions="Center"/>
+                                <Label Grid.Column="4" Text="{Binding Ic}" FontSize="12" HorizontalOptions="Center"/>
+                                <Label Grid.Column="5" Text="{Binding Ft}" FontSize="12" HorizontalOptions="Center"/>
+                                <Label Grid.Column="6" Text="{Binding Hfe}" FontSize="12" HorizontalOptions="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </StackLayout>
+        </ScrollView>
+
+        <!-- Botones de acción -->
+        <Grid Grid.Row="2" 
+              Padding="10" 
+              BackgroundColor="#F5F5F5"
+              ColumnDefinitions="*,*,*,*,*,*">
+
+            <Button Grid.Column="0"
+                    Text="Nuevo"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding NewCommand}"
+                    Margin="2"/>
+
+            <Button Grid.Column="1"
+                    Text="Editar"
+                    BackgroundColor="#2196F3"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding EditCommand}"
+                    Margin="2"/>
+
+            <Button Grid.Column="2"
+                    Text="Eliminar"
+                    BackgroundColor="#F44336"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding DeleteCommand}"
+                    Margin="2"/>
+
+            <Button Grid.Column="3"
+                    Text="Importar"
+                    BackgroundColor="#FF9800"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding ImportCommand}"
+                    Margin="2"/>
+
+            <Button Grid.Column="4"
+                    Text="PDF"
+                    BackgroundColor="#9C27B0"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding ExportToPdfCommand}"
+                    Margin="2"/>
+
+            <Button Grid.Column="5"
+                    Text="Excel"
+                    BackgroundColor="#4CAF50"
+                    TextColor="White"
+                    FontSize="12"
+                    Command="{Binding ExportToExcelCommand}"
+                    Margin="2"/>
+        </Grid>
+    </Grid>
+</ContentPage>

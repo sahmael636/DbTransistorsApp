@@ -1,9 +1,10 @@
-﻿// Models/MOSFET/Mosfet.cs
-using SQLite;
+﻿using SQLite;
 
-[Table("mosfetdual")]
-public class MosfetDual : ITransistor
+namespace DbTransistorsApp.Models.Base
 {
+    [Table("mosfetdual")]
+    public class MosfetDual : ITransistor
+    {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }
 
@@ -43,6 +44,7 @@ public class MosfetDual : ITransistor
     [Column("struct_id")]
     public int StructId { get; set; }
 
-    [Ignore]
-    public List<int> CapsIds { get; set; } = new();
+        [Ignore]
+        public List<int> CapsIds { get; set; } = new();
+    }
 }

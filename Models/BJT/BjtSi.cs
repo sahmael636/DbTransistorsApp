@@ -1,9 +1,11 @@
 ﻿// Models/BJT/BjtSi.cs
 using SQLite;
 
-[Table("bjtsi")]
-public class BjtSi : ITransistor
+namespace DbTransistorsApp.Models.Base
 {
+    [Table("bjtsi")]
+    public class BjtSi : ITransistor
+    {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }
 
@@ -40,6 +42,7 @@ public class BjtSi : ITransistor
     [Column("struct_id")]
     public int StructId { get; set; }
 
-    [Ignore]
-    public List<int> CapsIds { get; set; } = new();
+        [Ignore]
+        public List<int> CapsIds { get; set; } = new();
+    }
 }

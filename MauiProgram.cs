@@ -4,6 +4,7 @@ using DbTransistorsApp.ViewModels;
 using DbTransistorsApp.Views;
 using Microsoft.Extensions.Logging;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Maui;
 
 namespace DbTransistorsApp;
 
@@ -14,6 +15,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

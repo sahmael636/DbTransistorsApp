@@ -4,7 +4,8 @@
              xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
              xmlns:converters="clr-namespace:DbTransistorsApp.Converters"
              x:Class="DbTransistorsApp.Views.TransistorListPage"
-             x:DataType="viewmodels:TransistorListViewModel"
+             x:Name="ThisPage"
+
              Title="{Binding Title}">
 
     <ContentPage.Resources>
@@ -142,7 +143,7 @@
                               ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
 
                             <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorListViewModel}}, Path=SelectTransistorCommand}"
+                                <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"
                                                       CommandParameter="{Binding .}"/>
                             </Grid.GestureRecognizers>
 

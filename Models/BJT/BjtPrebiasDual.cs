@@ -1,9 +1,11 @@
 ﻿// Models/BJT/BjtPrebias.cs
 using SQLite;
 
-[Table("bjtprebiasdual")]
-public class BjtPrebiasDual : ITransistor
+namespace DbTransistorsApp.Models.Base
 {
+    [Table("bjtprebiasdual")]
+    public class BjtPrebiasDual : ITransistor
+    {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }
 
@@ -46,6 +48,7 @@ public class BjtPrebiasDual : ITransistor
     [Column("struct_id")]
     public int StructId { get; set; }
 
-    [Ignore]
-    public List<int> CapsIds { get; set; } = new();
+        [Ignore]
+        public List<int> CapsIds { get; set; } = new();
+    }
 }

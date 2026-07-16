@@ -2,7 +2,10 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:models="clr-namespace:DbTransistorsApp.Models.Base"
              x:Class="DbTransistorsApp.Views.TransistorDetailPage"
+             x:Name="ThisPage"
              x:DataType="viewmodels:TransistorDetailViewModel"
              Title="Transistor {Binding TransistorName}">
 
@@ -69,7 +72,7 @@
                                                HorizontalOptions="Fill">
                                             <Entry.Behaviors>
                                                 <toolkit:EventToCommandBehavior EventName="TextChanged"
-                                                                               Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorDetailViewModel}}, Path=ParameterChangedCommand}"
+                                                                               Command="{Binding BindingContext.ParameterChangedCommand, Source={x:Reference ThisPage}}"
                                                                                CommandParameter="{Binding Name}"/>
                                             </Entry.Behaviors>
                                         </Entry>
@@ -137,13 +140,13 @@
                     </CollectionView.Header>
 
                     <CollectionView.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="models:ITransistor">
                             <Grid Padding="5" 
                                   ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
                                   BackgroundColor="{Binding BackgroundColor}">
 
                                 <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorDetailViewModel}}, Path=SelectReplacementCommand}"
+                                    <TapGestureRecognizer Command="{Binding BindingContext.SelectReplacementCommand, Source={x:Reference ThisPage}}"
                                                           CommandParameter="{Binding .}"/>
                                 </Grid.GestureRecognizers>
 

@@ -1,9 +1,11 @@
 ﻿// Models/IGBT/Igbt.cs
 using SQLite;
 
-[Table("igbt")]
-public class Igbt : ITransistor
+namespace DbTransistorsApp.Models.Base
 {
+    [Table("igbt")]
+    public class Igbt : ITransistor
+    {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }
 
@@ -37,6 +39,7 @@ public class Igbt : ITransistor
     [Column("struct_id")]
     public int StructId { get; set; }
 
-    [Ignore]
-    public List<int> CapsIds { get; set; } = new();
+        [Ignore]
+        public List<int> CapsIds { get; set; } = new();
+    }
 }

@@ -2,9 +2,11 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             xmlns:models="clr-namespace:DbTransistorsApp.Models.Base"
              x:Class="DbTransistorsApp.Views.EstructurasPage"
              x:DataType="viewmodels:EstructurasViewModel"
-             Title="{Binding Title}">
+             Title="{Binding Title}"
+             IsBusy="{Binding IsBusy}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -12,43 +14,45 @@
         </Grid.RowDefinitions>
 
         <!-- Lista de estructuras -->
-        <CollectionView Grid.Row="0"
-                        ItemsSource="{Binding Estructuras}"
-                        IsBusy="{Binding IsBusy}">
+        <RefreshView Grid.Row="0"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding RefreshCommand}">
+            <CollectionView ItemsSource="{Binding Estructuras}">
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:Estructura">
-                    <Grid Padding="10" 
-                          ColumnDefinitions="*,Auto,Auto"
-                          BackgroundColor="{Binding BackgroundColor}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Estructura">
+                        <Grid Padding="10" 
+                              ColumnDefinitions="*,Auto,Auto"
+                              BackgroundColor="{Binding BackgroundColor}">
 
-                        <Label Grid.Column="0" 
-                               Text="{Binding Nombre}" 
-                               FontSize="16"
-                               VerticalOptions="Center"/>
+                            <Label Grid.Column="0" 
+                                   Text="{Binding Nombre}" 
+                                   FontSize="16"
+                                   VerticalOptions="Center"/>
 
-                        <Button Grid.Column="1"
-                                Text="✏️"
-                                BackgroundColor="Transparent"
-                                TextColor="#2196F3"
-                                FontSize="18"
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:EstructurasViewModel}}, Path=EditEstructuraCommand}"
-                                CommandParameter="{Binding .}"
-                                VerticalOptions="Center"
-                                Margin="0,0,5,0"/>
+                            <Button Grid.Column="1"
+                                    Text="✏️"
+                                    BackgroundColor="Transparent"
+                                    TextColor="#2196F3"
+                                    FontSize="18"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:EstructurasViewModel}}, Path=EditEstructuraCommand}"
+                                    CommandParameter="{Binding .}"
+                                    VerticalOptions="Center"
+                                    Margin="0,0,5,0"/>
 
-                        <Button Grid.Column="2"
-                                Text="🗑️"
-                                BackgroundColor="Transparent"
-                                TextColor="#F44336"
-                                FontSize="18"
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:EstructurasViewModel}}, Path=DeleteEstructuraCommand}"
-                                CommandParameter="{Binding .}"
-                                VerticalOptions="Center"/>
-                    </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                            <Button Grid.Column="2"
+                                    Text="🗑️"
+                                    BackgroundColor="Transparent"
+                                    TextColor="#F44336"
+                                    FontSize="18"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:EstructurasViewModel}}, Path=DeleteEstructuraCommand}"
+                                    CommandParameter="{Binding .}"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
 
         <!-- Botón flotante -->
         <Button Grid.Row="0"

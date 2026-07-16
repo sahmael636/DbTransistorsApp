@@ -1,6 +1,7 @@
 ﻿// ViewModels/EstructurasViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
 //using IntelliJ.Lang.Annotations;

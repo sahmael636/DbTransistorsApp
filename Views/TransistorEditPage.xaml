@@ -2,8 +2,9 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
-             x:Class="DbTransistorsApp.Views.TransistorEditPage"
-             x:DataType="viewmodels:TransistorEditViewModel"
+             xmlns:models="clr-namespace:DbTransistorsApp.Models.Base" 
+             x:Class="DbTransistorsApp.Views.EncapsuladosPage"
+             x:DataType="viewmodels:EncapsuladosViewModel"
              Title="{Binding Title}">
 
     <ScrollView>
@@ -121,18 +122,23 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:Encapsulado">
                         <Border Padding="10,5" 
-                                StrokeThickness="1"
-                                Stroke="{Binding BorderColor}"
-                                BackgroundColor="{Binding BackgroundColor}">
+        StrokeThickness="1"
+        Stroke="{Binding BorderColor}"
+        BackgroundColor="{Binding BackgroundColor}">
 
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorEditViewModel}}, Path=ToggleEncapsuladoCommand}"
-                                                      CommandParameter="{Binding .}"/>
-                            </Grid.GestureRecognizers>
+                            <Grid>
+                                <!-- ✅ Grid necesario -->
+                                <Grid.GestureRecognizers>
+                                    <!-- ✅ GestureRecognizers en Grid -->
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TransistorEditViewModel}}, Path=ToggleEncapsuladoCommand}"
+                                  CommandParameter="{Binding .}"/>
+                                </Grid.GestureRecognizers>
 
-                            <Label Text="{Binding Nombre}" 
-                                   FontSize="12"
-                                   HorizontalOptions="Center"/>
+                                <Label Text="{Binding Nombre}" 
+               FontSize="12"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"/>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

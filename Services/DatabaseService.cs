@@ -1,5 +1,6 @@
 ﻿// Services/DatabaseService.cs
 using DbTransistorsApp.Models.Base;
+using System.Diagnostics;
 using SQLite;
 
 namespace DbTransistorsApp.Services
@@ -348,29 +349,72 @@ namespace DbTransistorsApp.Services
 
         public async Task<ITransistor> GetTransistorByTypeAndIdAsync(string type, int id)
         {
+            Debug.WriteLine($"GetTransistorByTypeAndIdAsync called: type={type}, id={id}");
+
             switch (type?.ToLower())
             {
                 case "bjtge":
-                    return await GetBjtGeByIdAsync(id);
+                {
+                    var res = await GetBjtGeByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtge id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "bjtsi":
-                    return await GetBjtSiByIdAsync(id);
+                {
+                    var res = await GetBjtSiByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsi id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "bjtprebias":
-                    return await GetBjtPrebiasByIdAsync(id);
+                {
+                    var res = await GetBjtPrebiasByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebias id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "bjtprebiasdual":
-                    return await GetBjtPrebiasDualByIdAsync(id);
+                {
+                    var res = await GetBjtPrebiasDualByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebiasdual id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "bjtsidual":
-                    return await GetBjtSiDualByIdAsync(id);
+                {
+                    var res = await GetBjtSiDualByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsidual id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "jfet":
-                    return await GetJfetByIdAsync(id);
+                {
+                    var res = await GetJfetByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for jfet id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "mosfet":
-                    return await GetMosfetByIdAsync(id);
+                {
+                    var res = await GetMosfetByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfet id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "mosfetdual":
-                    return await GetMosfetDualByIdAsync(id);
+                {
+                    var res = await GetMosfetDualByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfetdual id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "igbt":
-                    return await GetIgbtByIdAsync(id);
+                {
+                    var res = await GetIgbtByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbt id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 case "igbtdual":
-                    return await GetIgbtDualByIdAsync(id);
+                {
+                    var res = await GetIgbtDualByIdAsync(id);
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbtdual id={id}: {(res != null ? "found" : "null")}");
+                    return res;
+                }
                 default:
+                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync: tipo no válido {type}");
                     throw new ArgumentException($"Tipo no válido: {type}");
             }
         }

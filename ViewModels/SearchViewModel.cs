@@ -92,12 +92,24 @@ namespace DbTransistorsApp.ViewModels
         [RelayCommand]
         private async Task SelectTransistor(ByNameItem item)
         {
-            await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
-                new Dictionary<string, object>
-                {
-                    { "Type", item.Type },
-                    { "Id", item.Idx }
-                });
+            if (item == null)
+                return;
+
+            try
+            {
+                // ✅ Pasar parámetros correctamente
+                var parameters = new Dictionary<string, object>
+        {
+            { "type", item.Type },
+            { "id", item.Idx }
+        };
+
+                await _navigationService.NavigateToAsync(nameof(TransistorDetailPage), parameters);
+            }
+            catch (Exception ex)
+            {
+                //await _dialogService.ShowAlertAsync("Error", $"Error al navegar: {ex.Message}", "OK");
+            }
         }
     }
 

@@ -7,7 +7,7 @@
              x:Class="DbTransistorsApp.Views.TransistorDetailPage"
              x:Name="ThisPage"
              x:DataType="viewmodels:TransistorDetailViewModel"
-             Title="Transistor {Binding TransistorName}">
+             Title="{Binding TransistorName, StringFormat='Transistor {0}'}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -126,38 +126,77 @@
                                 HeightRequest="300">
 
                     <CollectionView.Header>
-                        <Grid Padding="5" 
-                              BackgroundColor="#E3F2FD"
-                              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
-                            <Label Grid.Column="0" Text="Nombre" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="1" Text="Pc" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="2" Text="VCE" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="3" Text="VCB" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="4" Text="IC" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="5" Text="Ft" FontAttributes="Bold" FontSize="12"/>
-                            <Label Grid.Column="6" Text="Hfe" FontAttributes="Bold" FontSize="12"/>
+                        <Grid Padding="10,5" 
+              BackgroundColor="#E3F2FD"
+              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
+              ColumnSpacing="5">
+
+                            <Label Grid.Column="0" 
+                   Text="Nombre" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"/>
+
+                            <Label Grid.Column="1" 
+                   Text="Pc" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
+
+                            <Label Grid.Column="2" 
+                   Text="VCE" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
+
+                            <Label Grid.Column="3" 
+                   Text="VCB" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
+
+                            <Label Grid.Column="4" 
+                   Text="IC" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
+
+                            <Label Grid.Column="5" 
+                   Text="Ft" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
+
+                            <Label Grid.Column="6" 
+                   Text="Hfe" 
+                   FontAttributes="Bold" 
+                   FontSize="12"
+                   TextColor="#333333"
+                   HorizontalOptions="Center"/>
                         </Grid>
                     </CollectionView.Header>
 
+                    <!-- ✅ ITEM TEMPLATE - Después del Header -->
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ITransistor">
-                            <Grid Padding="5" 
-                                  ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
-                                  BackgroundColor="{Binding BackgroundColor}">
+                        <DataTemplate>
+                                <Grid Padding="10,5" 
+                                      BackgroundColor="#E3F2FD"
+                                      ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
+                                      ColumnSpacing="5">
 
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding BindingContext.SelectReplacementCommand, Source={x:Reference ThisPage}}"
-                                                          CommandParameter="{Binding .}"/>
-                                </Grid.GestureRecognizers>
-
-                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12"/>
-                                <Label Grid.Column="1" Text="{Binding Pc}" FontSize="12" HorizontalOptions="Center"/>
-                                <Label Grid.Column="2" Text="{Binding Vce}" FontSize="12" HorizontalOptions="Center"/>
-                                <Label Grid.Column="3" Text="{Binding Vcb}" FontSize="12" HorizontalOptions="Center"/>
-                                <Label Grid.Column="4" Text="{Binding Ic}" FontSize="12" HorizontalOptions="Center"/>
-                                <Label Grid.Column="5" Text="{Binding Ft}" FontSize="12" HorizontalOptions="Center"/>
-                                <Label Grid.Column="6" Text="{Binding Hfe}" FontSize="12" HorizontalOptions="Center"/>
-                            </Grid>
+                                    <Label Grid.Column="0" Text="Nombre" FontAttributes="Bold" FontSize="12"/>
+                                    <Label Grid.Column="1" Text="Pc" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                    <Label Grid.Column="2" Text="VCE" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                    <Label Grid.Column="3" Text="VCB" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                    <Label Grid.Column="4" Text="IC" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                    <Label Grid.Column="5" Text="Ft" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                    <Label Grid.Column="6" Text="Hfe" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
+                                </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>

@@ -23,6 +23,37 @@ namespace DbTransistorsApp.ViewModels
         private Type _modelType;
 
         [ObservableProperty]
+        private string _idString;
+
+        public int Id
+        {
+            get => _id;
+            set
+            {
+                _id = value;
+                // ✅ Cargar datos cuando se recibe el ID
+                if (_id > 0 && !string.IsNullOrEmpty(Type))
+                {
+                    Task.Run(async () => await LoadTransistorData());
+                }
+            }
+        }
+
+        public string Type
+        {
+            get => _tableType;
+            set
+            {
+                _tableType = value;
+                // ✅ Cargar datos cuando se recibe el tipo
+                if (_id > 0 && !string.IsNullOrEmpty(_tableType))
+                {
+                    Task.Run(async () => await LoadTransistorData());
+                }
+            }
+        }
+
+        [ObservableProperty]
         private string _transistorName;
 
         [ObservableProperty]
@@ -53,8 +84,58 @@ namespace DbTransistorsApp.ViewModels
             _dialogService = dialogService;
         }
 
+        // ✅ Método para cargar datos
+        private async Task LoadTransistorData()
+        {
+            try
+            {
+                IsBusy = true;
+
+                // Obtener el transistor
+                _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(_tableType, _id);
+                if (_originalTransistor == null)
+                {
+                    await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
+                    await _navigationService.NavigateBackAsync();
+                    return;
+                }
+
+                TransistorName = _originalTransistor.Name;
+
+                // Crear una copia editable
+                _currentTransistor = CloneTransistor(_originalTransistor);
+
+                // Obtener la estructura
+                var estructura = await _databaseService.GetEstructuraByIdAsync(_originalTransistor.StructId);
+                TransistorStructure = estructura?.Nombre ?? "Desconocida";
+
+                // Obtener tipo de transistor
+                TransistorType = GetTransistorDisplayType(_tableType);
+
+                // Obtener encapsulado
+                var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(_tableType, _id);
+                Encapsulado = caps.FirstOrDefault();
+                HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
+
+                // Configurar parámetros
+                ConfigureParameters(_currentTransistor);
+
+                // Cargar reemplazos
+                await LoadReplacementsAsync();
+            }
+            catch (Exception ex)
+            {
+                await _dialogService.ShowAlertAsync("Error", $"Error al cargar: {ex.Message}", "OK");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         public async Task InitializeAsync(string type, int id)
         {
+            System.Diagnostics.Debug.WriteLine($"InitializeAsync start: type={type}, id={id}");
             _tableType = type;
             _id = id;
             _modelType = GetModelType(type);

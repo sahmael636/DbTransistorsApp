@@ -16,9 +16,12 @@ namespace DbTransistorsApp.Services
         {
             try
             {
-                if (parameters != null)
+                if (parameters != null && parameters.Count > 0)
                 {
-                    await Shell.Current.GoToAsync(pageKey, true, parameters);
+                    // Construir una cadena de consulta para asegurar que los parámetros llegan como QueryParameters
+                    var query = string.Join("&", parameters.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value?.ToString() ?? string.Empty)}"));
+                    var route = pageKey + "?" + query;
+                    await Shell.Current.GoToAsync(route, true);
                 }
                 else
                 {

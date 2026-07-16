@@ -3,10 +3,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-using IntelliJ.Lang.Annotations;
+using DbTransistorsApp.Views;
+
+//using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using static Android.Icu.Text.CaseMap;
+//using static Android.Icu.Text.CaseMap;
 
 namespace DbTransistorsApp.ViewModels
 {

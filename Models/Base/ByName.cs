@@ -1,5 +1,5 @@
 ﻿// Models/Base/ByName.cs
-using System.ComponentModel.DataAnnotations.Schema;
+using SQLite;
 
 [Table("byname")]
 public class ByName

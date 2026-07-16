@@ -1,8 +1,8 @@
 ﻿// Models/MOSFET/Mosfet.cs
 using SQLite;
 
-[Table("mosfet")]
-public class Mosfet : ITransistor
+[Table("mosfetdual")]
+public class MosfetDual : ITransistor
 {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }

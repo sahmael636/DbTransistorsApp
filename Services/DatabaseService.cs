@@ -1,132 +1,264 @@
-﻿// Services/DatabaseServiceExtensions.cs
+﻿// Services/DatabaseService.cs
+using DbTransistorsApp.Models.Base;
 using SQLite;
-using System.Collections.ObjectModel;
-using System.Text;
 
 namespace DbTransistorsApp.Services
 {
     public partial class DatabaseService
     {
-        // Métodos para Encapsulados
-        public async Task<List<Encapsulado>> GetAllEncapsuladosAsync()
+        private readonly SQLiteAsyncConnection _database;
+        private readonly string _dbPath;
+
+        public DatabaseService()
         {
-            return await _database.Table<Encapsulado>().ToListAsync();
+            _dbPath = Path.Combine(FileSystem.AppDataDirectory, "dbtransistors.db");
+
+            if (!File.Exists(_dbPath))
+            {
+                using var stream = FileSystem.OpenAppPackageFileAsync("dbtransistors.db").Result;
+                using var fileStream = File.Create(_dbPath);
+                stream.CopyTo(fileStream);
+            }
+
+            _database = new SQLiteAsyncConnection(_dbPath);
         }
 
-        public async Task<Encapsulado> GetEncapsuladoByIdAsync(int id)
+        public async Task<bool> TestConnection()
         {
-            return await _database.FindAsync<Encapsulado>(id);
+            try
+            {
+                await _database.ExecuteScalarAsync<int>("SELECT 1");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
-        public async Task<int> InsertEncapsuladoAsync(Encapsulado encapsulado)
-        {
-            return await _database.InsertAsync(encapsulado);
-        }
-
-        public async Task<int> UpdateEncapsuladoAsync(Encapsulado encapsulado)
-        {
-            return await _database.UpdateAsync(encapsulado);
-        }
-
-        public async Task<int> DeleteEncapsuladoAsync(int id)
-        {
-            return await _database.DeleteAsync<Encapsulado>(id);
-        }
-
-        // Métodos para Estructuras
+        // ==================== ESTRUCTURAS ====================
         public async Task<List<Estructura>> GetAllEstructurasAsync()
-        {
-            return await _database.Table<Estructura>().ToListAsync();
-        }
+            => await _database.Table<Estructura>().OrderBy(x => x.Nombre).ToListAsync();
 
         public async Task<Estructura> GetEstructuraByIdAsync(int id)
-        {
-            return await _database.FindAsync<Estructura>(id);
-        }
+            => await _database.FindAsync<Estructura>(id);
 
-        public async Task<int> InsertEstructuraAsync(Estructura estructura)
-        {
-            return await _database.InsertAsync(estructura);
-        }
+        public async Task<int> InsertEstructuraAsync(Estructura entity)
+            => await _database.InsertAsync(entity);
 
-        public async Task<int> UpdateEstructuraAsync(Estructura estructura)
-        {
-            return await _database.UpdateAsync(estructura);
-        }
+        public async Task<int> UpdateEstructuraAsync(Estructura entity)
+            => await _database.UpdateAsync(entity);
 
         public async Task<int> DeleteEstructuraAsync(int id)
+            => await _database.DeleteAsync<Estructura>(id);
+
+        // ==================== ENCAPSULADOS ====================
+        public async Task<List<Encapsulado>> GetAllEncapsuladosAsync()
+            => await _database.Table<Encapsulado>().OrderBy(x => x.Nombre).ToListAsync();
+
+        public async Task<Encapsulado> GetEncapsuladoByIdAsync(int id)
+            => await _database.FindAsync<Encapsulado>(id);
+
+        public async Task<int> InsertEncapsuladoAsync(Encapsulado entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateEncapsuladoAsync(Encapsulado entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteEncapsuladoAsync(int id)
+            => await _database.DeleteAsync<Encapsulado>(id);
+
+        // ==================== ByName ====================
+        public async Task<List<ByName>> GetAllByNameAsync()
+            => await _database.Table<ByName>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<List<ByName>> SearchByNameAsync(string searchTerm)
         {
-            return await _database.DeleteAsync<Estructura>(id);
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return await GetAllByNameAsync();
+
+            return await _database.Table<ByName>()
+                .Where(x => x.Name.Contains(searchTerm))
+                .OrderBy(x => x.Name)
+                .ToListAsync();
         }
 
-        // Métodos genéricos para transistores
-        public async Task<List<object>> GetAllByTableAsync(string tableName)
+        // ==================== BJT GERMANIUM ====================
+        public async Task<List<BjtGe>> GetAllBjtGeAsync()
+            => await _database.Table<BjtGe>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<BjtGe> GetBjtGeByIdAsync(int id)
+            => await _database.FindAsync<BjtGe>(id);
+
+        public async Task<int> InsertBjtGeAsync(BjtGe entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateBjtGeAsync(BjtGe entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteBjtGeAsync(int id)
+            => await _database.DeleteAsync<BjtGe>(id);
+
+        // ==================== BJT SILICIO ====================
+        public async Task<List<BjtSi>> GetAllBjtSiAsync()
+            => await _database.Table<BjtSi>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<BjtSi> GetBjtSiByIdAsync(int id)
+            => await _database.FindAsync<BjtSi>(id);
+
+        public async Task<int> InsertBjtSiAsync(BjtSi entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateBjtSiAsync(BjtSi entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteBjtSiAsync(int id)
+            => await _database.DeleteAsync<BjtSi>(id);
+
+        // ==================== BJT PREBIAS ====================
+        public async Task<List<BjtPrebias>> GetAllBjtPrebiasAsync()
+            => await _database.Table<BjtPrebias>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<BjtPrebias> GetBjtPrebiasByIdAsync(int id)
+            => await _database.FindAsync<BjtPrebias>(id);
+
+        public async Task<int> InsertBjtPrebiasAsync(BjtPrebias entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateBjtPrebiasAsync(BjtPrebias entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteBjtPrebiasAsync(int id)
+            => await _database.DeleteAsync<BjtPrebias>(id);
+
+        // ==================== BJT PREBIAS DUAL ====================
+        public async Task<List<BjtPrebiasDual>> GetAllBjtPrebiasDualAsync()
+            => await _database.Table<BjtPrebiasDual>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<BjtPrebiasDual> GetBjtPrebiasDualByIdAsync(int id)
+            => await _database.FindAsync<BjtPrebiasDual>(id);
+
+        public async Task<int> InsertBjtPrebiasDualAsync(BjtPrebiasDual entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateBjtPrebiasDualAsync(BjtPrebiasDual entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteBjtPrebiasDualAsync(int id)
+            => await _database.DeleteAsync<BjtPrebiasDual>(id);
+
+        // ==================== BJT SILICIO DUAL ====================
+        public async Task<List<BjtSiDual>> GetAllBjtSiDualAsync()
+            => await _database.Table<BjtSiDual>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<BjtSiDual> GetBjtSiDualByIdAsync(int id)
+            => await _database.FindAsync<BjtSiDual>(id);
+
+        public async Task<int> InsertBjtSiDualAsync(BjtSiDual entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateBjtSiDualAsync(BjtSiDual entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteBjtSiDualAsync(int id)
+            => await _database.DeleteAsync<BjtSiDual>(id);
+
+        // ==================== JFET ====================
+        public async Task<List<Jfet>> GetAllJfetAsync()
+            => await _database.Table<Jfet>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<Jfet> GetJfetByIdAsync(int id)
+            => await _database.FindAsync<Jfet>(id);
+
+        public async Task<int> InsertJfetAsync(Jfet entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateJfetAsync(Jfet entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteJfetAsync(int id)
+            => await _database.DeleteAsync<Jfet>(id);
+
+        // ==================== MOSFET ====================
+        public async Task<List<Mosfet>> GetAllMosfetAsync()
+            => await _database.Table<Mosfet>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<Mosfet> GetMosfetByIdAsync(int id)
+            => await _database.FindAsync<Mosfet>(id);
+
+        public async Task<int> InsertMosfetAsync(Mosfet entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateMosfetAsync(Mosfet entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteMosfetAsync(int id)
+            => await _database.DeleteAsync<Mosfet>(id);
+
+        // ==================== MOSFET DUAL ====================
+        public async Task<List<MosfetDual>> GetAllMosfetDualAsync()
+            => await _database.Table<MosfetDual>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<MosfetDual> GetMosfetDualByIdAsync(int id)
+            => await _database.FindAsync<MosfetDual>(id);
+
+        public async Task<int> InsertMosfetDualAsync(MosfetDual entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateMosfetDualAsync(MosfetDual entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteMosfetDualAsync(int id)
+            => await _database.DeleteAsync<MosfetDual>(id);
+
+        // ==================== IGBT ====================
+        public async Task<List<Igbt>> GetAllIgbtAsync()
+            => await _database.Table<Igbt>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<Igbt> GetIgbtByIdAsync(int id)
+            => await _database.FindAsync<Igbt>(id);
+
+        public async Task<int> InsertIgbtAsync(Igbt entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateIgbtAsync(Igbt entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteIgbtAsync(int id)
+            => await _database.DeleteAsync<Igbt>(id);
+
+        // ==================== IGBT DUAL ====================
+        public async Task<List<IgbtDual>> GetAllIgbtDualAsync()
+            => await _database.Table<IgbtDual>().OrderBy(x => x.Name).ToListAsync();
+
+        public async Task<IgbtDual> GetIgbtDualByIdAsync(int id)
+            => await _database.FindAsync<IgbtDual>(id);
+
+        public async Task<int> InsertIgbtDualAsync(IgbtDual entity)
+            => await _database.InsertAsync(entity);
+
+        public async Task<int> UpdateIgbtDualAsync(IgbtDual entity)
+            => await _database.UpdateAsync(entity);
+
+        public async Task<int> DeleteIgbtDualAsync(int id)
+            => await _database.DeleteAsync<IgbtDual>(id);
+
+
+        // ==================== RELACIONES ====================
+        public async Task<List<Encapsulado>> GetEncapsuladosByTransistorIdAsync(string tableName, int transistorId)
         {
-            var type = GetModelType(tableName);
-            var query = $"SELECT * FROM {tableName} ORDER BY name";
-            var results = await _database.QueryAsync(type, query);
-            return results.Cast<object>().ToList();
+            string joinTable = $"{tableName}_caps";
+            var query = $@"
+                SELECT e.* 
+                FROM encapsulados e
+                INNER JOIN {joinTable} tc ON e.id = tc.caps_id
+                WHERE tc.{tableName}_id = ?
+            ";
+
+            return await _database.QueryAsync<Encapsulado>(query, transistorId);
         }
 
-        public async Task<ITransistor> GetTransistorByTypeAndIdAsync(string type, int id)
-        {
-            var modelType = GetModelType(type);
-            return await _database.FindAsync(modelType, id) as ITransistor;
-        }
-
-        public async Task<int> InsertTransistorAsync(string tableName, ITransistor transistor)
-        {
-            return await _database.InsertAsync(transistor);
-        }
-
-        public async Task<int> UpdateTransistorAsync(string tableName, ITransistor transistor)
-        {
-            return await _database.UpdateAsync(transistor);
-        }
-
-        public async Task<int> DeleteTransistorAsync(string tableName, int id)
-        {
-            var modelType = GetModelType(tableName);
-            var transistor = await _database.FindAsync(modelType, id);
-            if (transistor != null)
-            {
-                return await _database.DeleteAsync(transistor);
-            }
-            return 0;
-        }
-
-        // Métodos para obtener transistores filtrados
-        public async Task<List<object>> GetFilteredTransistorsAsync(
-            string tableName,
-            Dictionary<string, object> numericFilters,
-            Dictionary<string, string> textFilters)
-        {
-            var type = GetModelType(tableName);
-            var conditions = new List<string>();
-            var parameters = new List<object>();
-
-            // Agregar filtros numéricos
-            foreach (var filter in numericFilters)
-            {
-                conditions.Add(filter.Key);
-                parameters.Add(filter.Value);
-            }
-
-            // Agregar filtros de texto
-            foreach (var filter in textFilters)
-            {
-                conditions.Add($"{filter.Key} LIKE ?");
-                parameters.Add($"%{filter.Value}%");
-            }
-
-            string whereClause = conditions.Any() ? $"WHERE {string.Join(" AND ", conditions)}" : "";
-            string query = $"SELECT * FROM {tableName} {whereClause} ORDER BY name";
-
-            var results = await _database.QueryAsync(type, query, parameters.ToArray());
-            return results.Cast<object>().ToList();
-        }
-
-        // Métodos para obtener reemplazos
+        // ==================== REEMPLAZOS ====================
         public async Task<List<object>> GetReplacementsAsync(
             string tableName,
             Dictionary<string, object> parameters,
@@ -149,14 +281,12 @@ namespace DbTransistorsApp.Services
                 }
             }
 
-            // Añadir condición de estructura
             if (structId > 0)
             {
                 conditions.Add("struct_id = ?");
                 args.Add(structId);
             }
 
-            // Excluir el transistor actual
             if (parameters.ContainsKey("_id"))
             {
                 conditions.Add("_id != ?");
@@ -166,25 +296,140 @@ namespace DbTransistorsApp.Services
             string whereClause = conditions.Any() ? $"WHERE {string.Join(" AND ", conditions)}" : "";
             string query = $"SELECT * FROM {tableName} {whereClause} ORDER BY name";
 
-            var results = await _database.QueryAsync(type, query, args.ToArray());
-            return results.Cast<object>().ToList();
+            return await ExecuteQueryAsync(tableName, query, args.ToArray());
         }
 
-        // Métodos para obtener encapsulados por transistor
-        public async Task<List<Encapsulado>> GetEncapsuladosByTransistorIdAsync(string tableName, int transistorId)
+        // ==================== FILTRADO ====================
+        public async Task<List<object>> GetFilteredTransistorsAsync(
+            string tableName,
+            Dictionary<string, object> numericFilters,
+            Dictionary<string, string> textFilters)
         {
-            string joinTable = $"{tableName}_caps";
-            var query = $@"
-                SELECT e.* 
-                FROM encapsulados e
-                INNER JOIN {joinTable} tc ON e.id = tc.caps_id
-                WHERE tc.{tableName}_id = ?
-            ";
+            var conditions = new List<string>();
+            var parameters = new List<object>();
 
-            return await _database.QueryAsync<Encapsulado>(query, transistorId);
+            foreach (var filter in numericFilters)
+            {
+                conditions.Add(filter.Key);
+                parameters.Add(filter.Value);
+            }
+
+            foreach (var filter in textFilters)
+            {
+                conditions.Add($"{filter.Key} LIKE ?");
+                parameters.Add($"%{filter.Value}%");
+            }
+
+            string whereClause = conditions.Any() ? $"WHERE {string.Join(" AND ", conditions)}" : "";
+            string query = $"SELECT * FROM {tableName} {whereClause} ORDER BY name";
+
+            return await ExecuteQueryAsync(tableName, query, parameters.ToArray());
         }
 
-        // Método para obtener el tipo de modelo
+        // ==================== MÉTODOS GENÉRICOS POR NOMBRE DE TABLA ====================
+
+        public async Task<List<object>> GetAllByTableAsync(string tableName)
+        {
+            return tableName?.ToLower() switch
+            {
+                "bjtge" => (await GetAllBjtGeAsync()).Cast<object>().ToList(),
+                "bjtsi" => (await GetAllBjtSiAsync()).Cast<object>().ToList(),
+                "bjtprebias" => (await GetAllBjtPrebiasAsync()).Cast<object>().ToList(),
+                "bjtprebiasdual" => (await GetAllBjtPrebiasDualAsync()).Cast<object>().ToList(),
+                "bjtsidual" => (await GetAllBjtSiDualAsync()).Cast<object>().ToList(),
+                "jfet" => (await GetAllJfetAsync()).Cast<object>().ToList(),
+                "mosfet" => (await GetAllMosfetAsync()).Cast<object>().ToList(),
+                "mosfetdual" => (await GetAllMosfetDualAsync()).Cast<object>().ToList(),
+                "igbt" => (await GetAllIgbtAsync()).Cast<object>().ToList(),
+                "igbtdual" => (await GetAllIgbtDualAsync()).Cast<object>().ToList(),
+                _ => throw new ArgumentException($"Tabla no válida: {tableName}")
+            };
+        }
+
+        public async Task<ITransistor> GetTransistorByTypeAndIdAsync(string type, int id)
+        {
+            switch (type?.ToLower())
+            {
+                case "bjtge":
+                    return await GetBjtGeByIdAsync(id);
+                case "bjtsi":
+                    return await GetBjtSiByIdAsync(id);
+                case "bjtprebias":
+                    return await GetBjtPrebiasByIdAsync(id);
+                case "bjtprebiasdual":
+                    return await GetBjtPrebiasDualByIdAsync(id);
+                case "bjtsidual":
+                    return await GetBjtSiDualByIdAsync(id);
+                case "jfet":
+                    return await GetJfetByIdAsync(id);
+                case "mosfet":
+                    return await GetMosfetByIdAsync(id);
+                case "mosfetdual":
+                    return await GetMosfetDualByIdAsync(id);
+                case "igbt":
+                    return await GetIgbtByIdAsync(id);
+                case "igbtdual":
+                    return await GetIgbtDualByIdAsync(id);
+                default:
+                    throw new ArgumentException($"Tipo no válido: {type}");
+            }
+        }
+
+        public async Task<int> InsertTransistorAsync(string tableName, ITransistor transistor)
+        {
+            return tableName?.ToLower() switch
+            {
+                "bjtge" => await InsertBjtGeAsync((BjtGe)transistor),
+                "bjtsi" => await InsertBjtSiAsync((BjtSi)transistor),
+                "bjtprebias" => await InsertBjtPrebiasAsync((BjtPrebias)transistor),
+                "bjtprebiasdual" => await InsertBjtPrebiasDualAsync((BjtPrebiasDual)transistor),
+                "bjtsidual" => await InsertBjtSiDualAsync((BjtSiDual)transistor),
+                "jfet" => await InsertJfetAsync((Jfet)transistor),
+                "mosfet" => await InsertMosfetAsync((Mosfet)transistor),
+                "mosfetdual" => await InsertMosfetDualAsync((MosfetDual)transistor),
+                "igbt" => await InsertIgbtAsync((Igbt)transistor),
+                "igbtdual" => await InsertIgbtDualAsync((IgbtDual)transistor),
+                _ => throw new ArgumentException($"Tabla no válida: {tableName}")
+            };
+        }
+
+        public async Task<int> UpdateTransistorAsync(string tableName, ITransistor transistor)
+        {
+            return tableName?.ToLower() switch
+            {
+                "bjtge" => await UpdateBjtGeAsync((BjtGe)transistor),
+                "bjtsi" => await UpdateBjtSiAsync((BjtSi)transistor),
+                "bjtprebias" => await UpdateBjtPrebiasAsync((BjtPrebias)transistor),
+                "bjtprebiasdual" => await UpdateBjtPrebiasDualAsync((BjtPrebiasDual)transistor),
+                "bjtsidual" => await UpdateBjtSiDualAsync((BjtSiDual)transistor),
+                "jfet" => await UpdateJfetAsync((Jfet)transistor),
+                "mosfet" => await UpdateMosfetAsync((Mosfet)transistor),
+                "mosfetdual" => await UpdateMosfetDualAsync((MosfetDual)transistor),
+                "igbt" => await UpdateIgbtAsync((Igbt)transistor),
+                "igbtdual" => await UpdateIgbtDualAsync((IgbtDual)transistor),
+                _ => throw new ArgumentException($"Tabla no válida: {tableName}")
+            };
+        }
+
+        public async Task<int> DeleteTransistorAsync(string tableName, int id)
+        {
+            return tableName?.ToLower() switch
+            {
+                "bjtge" => await DeleteBjtGeAsync(id),
+                "bjtsi" => await DeleteBjtSiAsync(id),
+                "bjtprebias" => await DeleteBjtPrebiasAsync(id),
+                "bjtprebiasdual" => await DeleteBjtPrebiasDualAsync(id),
+                "bjtsidual" => await DeleteBjtSiDualAsync(id),
+                "jfet" => await DeleteJfetAsync(id),
+                "mosfet" => await DeleteMosfetAsync(id),
+                "mosfetdual" => await DeleteMosfetDualAsync(id),
+                "igbt" => await DeleteIgbtAsync(id),
+                "igbtdual" => await DeleteIgbtDualAsync(id),
+                _ => throw new ArgumentException($"Tabla no válida: {tableName}")
+            };
+        }
+
+        // ==================== AUXILIARES ====================
         private Type GetModelType(string tableName)
         {
             return tableName switch
@@ -203,51 +448,16 @@ namespace DbTransistorsApp.Services
             };
         }
 
-        // Método para importar desde Excel
-        public async Task<int> ImportTransistorsFromExcelAsync(
-            string tableName,
-            List<Dictionary<string, object>> rows,
-            List<int> capsIds)
+        private async Task<List<object>> ExecuteQueryAsync(string tableName, string query, params object[] args)
         {
             var type = GetModelType(tableName);
-            int importedCount = 0;
-
-            foreach (var row in rows)
-            {
-                try
-                {
-                    var transistor = (ITransistor)Activator.CreateInstance(type);
-
-                    // Asignar propiedades
-                    foreach (var prop in type.GetProperties())
-                    {
-                        if (row.ContainsKey(prop.Name))
-                        {
-                            var value = row[prop.Name];
-                            if (value != null)
-                            {
-                                // Convertir el valor al tipo adecuado
-                                var convertedValue = Convert.ChangeType(value, prop.PropertyType);
-                                prop.SetValue(transistor, convertedValue);
-                            }
-                        }
-                    }
-
-                    // Asignar IDs de encapsulados
-                    transistor.CapsIds = capsIds;
-
-                    // Insertar en la base de datos
-                    await _database.InsertAsync(transistor);
-                    importedCount++;
-                }
-                catch (Exception ex)
-                {
-                    // Registrar error pero continuar
-                    Console.WriteLine($"Error al importar fila: {ex.Message}");
-                }
-            }
-
-            return importedCount;
+            var method = typeof(SQLiteAsyncConnection).GetMethod("QueryAsync");
+            var genericMethod = method.MakeGenericMethod(type);
+            var task = (Task)genericMethod.Invoke(_database, new object[] { query, args });
+            await task.ConfigureAwait(false);
+            var resultProperty = task.GetType().GetProperty("Result");
+            var result = resultProperty.GetValue(task);
+            return (List<object>)result;
         }
     }
 }

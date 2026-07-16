@@ -1,5 +1,5 @@
 ﻿// Models/BJT/BjtSi.cs
-using System.ComponentModel.DataAnnotations.Schema;
+using SQLite;
 
 [Table("bjtsi")]
 public class BjtSi : ITransistor

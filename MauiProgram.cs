@@ -3,6 +3,7 @@ using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels;
 using DbTransistorsApp.Views;
 using Microsoft.Extensions.Logging;
+using CommunityToolkit.Mvvm.DependencyInjection;
 
 namespace DbTransistorsApp;
 
@@ -51,7 +52,13 @@ public static class MauiProgram
         builder.Services.AddTransient<EstructurasPage>();
         builder.Services.AddTransient<TransistorEditPage>();
         builder.Services.AddTransient<ImagePopup>();
+        builder.Services.AddTransient<AppShell>();
 
-        return builder.Build();
+        var app = builder.Build();
+
+        // Configurar el servicio de inyección de dependencias para CommunityToolkit
+        Ioc.Default.ConfigureServices(app.Services);
+
+        return app;
     }
 }

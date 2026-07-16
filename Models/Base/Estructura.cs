@@ -1,5 +1,5 @@
 ﻿// Models/Base/Estructura.cs
-using System.ComponentModel.DataAnnotations.Schema;
+using SQLite;
 
 [Table("estructuras")]
 public class Estructura

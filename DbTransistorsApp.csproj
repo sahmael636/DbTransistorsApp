@@ -66,17 +66,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiCss Remove="Services\DatabaseServiceExtensions.css" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="EPPlus" Version="8.6.1" />
 		<PackageReference Include="ExcelDataReader" Version="3.9.0" />
+		<PackageReference Include="ExcelDataReader.DataSet" Version="3.9.0" />
 		<PackageReference Include="iTextSharp" Version="5.5.13.5" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Views\" />
 	</ItemGroup>
 
 	<ItemGroup>

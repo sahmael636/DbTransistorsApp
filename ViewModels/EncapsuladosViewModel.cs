@@ -1,11 +1,14 @@
 ﻿// ViewModels/EncapsuladosViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-using IntelliJ.Lang.Annotations;
+using DbTransistorsApp.Views;
+
+//using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
-using static Android.Icu.Text.CaseMap;
+//using static Android.Icu.Text.CaseMap;
 
 namespace DbTransistorsApp.ViewModels
 {

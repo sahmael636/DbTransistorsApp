@@ -1,8 +1,8 @@
-﻿// Models/IGBT/Igbt.cs
+﻿// Models/BJT/BjtSi.cs
 using SQLite;
 
-[Table("igbt")]
-public class Igbt : ITransistor
+[Table("bjtsidual")]
+public class BjtSiDual : ITransistor
 {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }
@@ -13,14 +13,14 @@ public class Igbt : ITransistor
     [Column("pc")]
     public double? Pc { get; set; }
 
+    [Column("vcb")]
+    public double? Vcb { get; set; }
+
     [Column("vce")]
     public double? Vce { get; set; }
 
-    [Column("vcesat")]
-    public double? Vcesat { get; set; }
-
-    [Column("veg")]
-    public double? Veg { get; set; }
+    [Column("veb")]
+    public double? Veb { get; set; }
 
     [Column("ic")]
     public double? Ic { get; set; }
@@ -28,11 +28,14 @@ public class Igbt : ITransistor
     [Column("tj")]
     public double? Tj { get; set; }
 
-    [Column("tr")]
-    public double? Tr { get; set; }
+    [Column("ft")]
+    public double? Ft { get; set; }
 
     [Column("cc")]
     public double? Cc { get; set; }
+
+    [Column("hfe")]
+    public double? Hfe { get; set; }
 
     [Column("struct_id")]
     public int StructId { get; set; }

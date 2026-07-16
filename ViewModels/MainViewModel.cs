@@ -1,8 +1,10 @@
 ﻿// ViewModels/MainViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-using static Android.Icu.Text.CaseMap;
+using DbTransistorsApp.Views;
+//using static Android.Icu.Text.CaseMap;
 
 namespace DbTransistorsApp.ViewModels
 {

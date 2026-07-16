@@ -1,12 +1,13 @@
 ﻿// ViewModels/TransistorEditViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-using IntelliJ.Lang.Annotations;
+//using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
-using static Android.Icu.Text.CaseMap;
-using static Java.Util.Jar.Attributes;
+//using static Android.Icu.Text.CaseMap;
+//using static Java.Util.Jar.Attributes;
 
 namespace DbTransistorsApp.ViewModels
 {

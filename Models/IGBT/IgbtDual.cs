@@ -1,8 +1,8 @@
 ﻿// Models/IGBT/Igbt.cs
 using SQLite;
 
-[Table("igbt")]
-public class Igbt : ITransistor
+[Table("igbtdual")]
+public class IgbtDual : ITransistor
 {
     [PrimaryKey, AutoIncrement, Column("_id")]
     public int Id { get; set; }

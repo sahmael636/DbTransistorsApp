@@ -1,4 +1,5 @@
 ﻿// Services/DialogService.cs
+using DbTransistorsApp.Views;
 using Microsoft.Maui.Controls;
 
 namespace DbTransistorsApp.Services

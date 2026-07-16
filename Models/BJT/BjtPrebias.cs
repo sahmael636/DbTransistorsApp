@@ -1,5 +1,5 @@
 ﻿// Models/BJT/BjtPrebias.cs
-using System.ComponentModel.DataAnnotations.Schema;
+using SQLite;
 
 [Table("bjtprebias")]
 public class BjtPrebias : ITransistor

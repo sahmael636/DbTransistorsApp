@@ -1,12 +1,13 @@
 ﻿// ViewModels/SearchViewModel.cs
-using Android.App.AppSearch;
+//using Android.App.AppSearch;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-using IntelliJ.Lang.Annotations;
+using DbTransistorsApp.Views;
+//using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
-using static Android.Icu.Text.CaseMap;
+//using static Android.Icu.Text.CaseMap;
 
 namespace DbTransistorsApp.ViewModels
 {

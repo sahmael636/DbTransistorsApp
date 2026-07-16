@@ -1,0 +1,42 @@
+﻿// Views/TransistorEditPage.xaml.cs
+using DbTransistorsApp.ViewModels;
+
+namespace DbTransistorsApp.Views;
+
+public partial class TransistorEditPage : ContentPage
+{
+    private readonly TransistorEditViewModel _viewModel;
+
+    public TransistorEditPage(TransistorEditViewModel viewModel)
+    {
+        InitializeComponent();
+        _viewModel = viewModel;
+        BindingContext = _viewModel;
+    }
+
+    private void InitializeComponent()
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (BindingContext is TransistorEditViewModel vm)
+        {
+            // Obtener parámetros de navegación
+            var parameters = Shell.Current.CurrentPage?.BindingContext as TransistorEditViewModel;
+            if (parameters != null)
+            {
+                await vm.OnAppearingAsync();
+            }
+        }
+    }
+
+    protected override async void OnDisappearing()
+    {
+        base.OnDisappearing();
+        await _viewModel.OnDisappearingAsync();
+    }
+}

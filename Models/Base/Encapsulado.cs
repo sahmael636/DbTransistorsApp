@@ -1,15 +1,18 @@
 ﻿// Models/Base/Encapsulado.cs
-using System.ComponentModel.DataAnnotations.Schema;
-
-[Table("encapsulados")]
-public class Encapsulado
+using SQLite;
+//using System.ComponentModel.DataAnnotations.Schema;
+namespace DbTransistorsApp.Models.Base 
 {
-    [PrimaryKey, AutoIncrement, Column("id")]
-    public int Id { get; set; }
+    [Table("encapsulados")]
+    public class Encapsulado
+    {
+        [PrimaryKey, AutoIncrement, Column("id")]
+        public int Id { get; set; }
 
-    [Column("nombre")]
-    public string Nombre { get; set; }
+        [Column("nombre")]
+        public string Nombre { get; set; }
 
-    [Column("imagen")]
-    public string Imagen { get; set; }
+        [Column("imagen")]
+        public string Imagen { get; set; }
+    }
 }

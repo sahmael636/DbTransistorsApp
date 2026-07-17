@@ -124,37 +124,41 @@
                             IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
 
                 <CollectionView.Header>
-                    <Grid Padding="10" 
-                          BackgroundColor="#2196F3"
-                          ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
-                        <Label Grid.Column="0" Text="Nombre" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="1" Text="Pc" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="2" Text="VCE" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="3" Text="VCB" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="4" Text="IC" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="5" Text="Ft" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                        <Label Grid.Column="6" Text="Hfe" TextColor="White" FontAttributes="Bold" FontSize="12"/>
-                    </Grid>
+                    <StackLayout Padding="10" BackgroundColor="#2196F3">
+                        <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Fill">
+                            <Label Text="Nombre" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
+                        <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding HeaderFields}" HorizontalOptions="FillAndExpand">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
+                                            <Label Text="{Binding .}" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </HorizontalStackLayout>
+                        </HorizontalStackLayout>
+                    </StackLayout>
                 </CollectionView.Header>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Padding="5" 
-                              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <HorizontalStackLayout Padding="5" Spacing="10">
+                            <HorizontalStackLayout.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}" CommandParameter="{Binding Original}" />
+                            </HorizontalStackLayout.GestureRecognizers>
 
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"
-                                                      CommandParameter="{Binding .}"/>
-                            </Grid.GestureRecognizers>
+                            <Label Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="StartAndExpand" />
 
-                            <Label Grid.Column="0" Text="{Binding Name}" FontSize="12"/>
-                            <Label Grid.Column="1" Text="{Binding Pc}" FontSize="12" HorizontalOptions="Center"/>
-                            <Label Grid.Column="2" Text="{Binding Vce}" FontSize="12" HorizontalOptions="Center"/>
-                            <Label Grid.Column="3" Text="{Binding Vcb}" FontSize="12" HorizontalOptions="Center"/>
-                            <Label Grid.Column="4" Text="{Binding Ic}" FontSize="12" HorizontalOptions="Center"/>
-                            <Label Grid.Column="5" Text="{Binding Ft}" FontSize="12" HorizontalOptions="Center"/>
-                            <Label Grid.Column="6" Text="{Binding Hfe}" FontSize="12" HorizontalOptions="Center"/>
-                        </Grid>
+                            <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Values}" HorizontalOptions="FillAndExpand">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
+                                            <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </HorizontalStackLayout>
+                        </HorizontalStackLayout>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

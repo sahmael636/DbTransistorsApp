@@ -266,6 +266,7 @@ namespace DbTransistorsApp.Services
             int structId,
             List<int> capsIds)
         {
+            Debug.WriteLine($"GetReplacementsAsync called: table={tableName}, structId={structId}, capsCount={capsIds?.Count}");
             var type = GetModelType(tableName);
             var conditions = new List<string>();
             var args = new List<object>();
@@ -274,9 +275,38 @@ namespace DbTransistorsApp.Services
             {
                 if (param.Key != "_id" && param.Value != null)
                 {
+                    // Mapear el nombre de la propiedad al nombre de columna en la tabla
+                    string columnName;
+                    try
+                    {
+                        var prop = type.GetProperty(param.Key);
+                        if (prop != null)
+                        {
+                            var colAttr = prop.GetCustomAttributes(false).FirstOrDefault(a => a.GetType().Name == "ColumnAttribute");
+                            if (colAttr != null)
+                            {
+                                // ColumnAttribute tiene una propiedad 'Name' o 'Column' según la implementación; intentar obtenerla por reflexión
+                                var nameProp = colAttr.GetType().GetProperty("Name") ?? colAttr.GetType().GetProperty("Column");
+                                columnName = nameProp?.GetValue(colAttr)?.ToString() ?? prop.Name.ToLowerInvariant();
+                            }
+                            else
+                            {
+                                columnName = prop.Name.ToLowerInvariant();
+                            }
+                        }
+                        else
+                        {
+                            columnName = param.Key.ToLowerInvariant();
+                        }
+                    }
+                    catch
+                    {
+                        columnName = param.Key.ToLowerInvariant();
+                    }
+
                     if (param.Value is double doubleValue && doubleValue > 0)
                     {
-                        conditions.Add($"{param.Key} >= ?");
+                        conditions.Add($"{columnName} >= ?");
                         args.Add(doubleValue);
                     }
                 }
@@ -297,6 +327,31 @@ namespace DbTransistorsApp.Services
             string whereClause = conditions.Any() ? $"WHERE {string.Join(" AND ", conditions)}" : "";
             string query = $"SELECT * FROM {tableName} {whereClause} ORDER BY name";
 
+            // Si hay capsIds, intentar filtrar por los ids en la tabla de relación
+            if (capsIds != null && capsIds.Any())
+            {
+                // Construir cláusula para IDs
+                var idsPlaceholders = string.Join(",", capsIds.Select((_, i) => "?"));
+                // joinTable expected: {tableName}_caps with columns {tableName}_id and caps_id
+                var joinQuery = $@"
+                    SELECT t.* FROM {tableName} t
+                    INNER JOIN {tableName}_caps tc ON t._id = tc.{tableName}_id
+                    WHERE tc.caps_id IN ({idsPlaceholders})
+                    { (string.IsNullOrEmpty(whereClause) ? "" : "AND " + whereClause.Substring(6)) }
+                    ORDER BY t.name
+                ";
+
+                var combinedArgs = new List<object>();
+                combinedArgs.AddRange(capsIds.Cast<object>());
+                combinedArgs.AddRange(args);
+
+                Debug.WriteLine($"GetReplacementsAsync query with caps: {joinQuery}");
+                Debug.WriteLine($"GetReplacementsAsync args: {string.Join(",", combinedArgs)}");
+                return await ExecuteQueryAsync(tableName, joinQuery, combinedArgs.ToArray());
+            }
+
+            Debug.WriteLine($"GetReplacementsAsync query: {query}");
+            Debug.WriteLine($"GetReplacementsAsync args: {string.Join(",", args)}");
             return await ExecuteQueryAsync(tableName, query, args.ToArray());
         }
 
@@ -476,7 +531,8 @@ namespace DbTransistorsApp.Services
         // ==================== AUXILIARES ====================
         private Type GetModelType(string tableName)
         {
-            return tableName switch
+            var t = tableName?.ToLowerInvariant();
+            return t switch
             {
                 "bjtge" => typeof(BjtGe),
                 "bjtsi" => typeof(BjtSi),
@@ -494,14 +550,42 @@ namespace DbTransistorsApp.Services
 
         private async Task<List<object>> ExecuteQueryAsync(string tableName, string query, params object[] args)
         {
-            var type = GetModelType(tableName);
-            var method = typeof(SQLiteAsyncConnection).GetMethod("QueryAsync");
-            var genericMethod = method.MakeGenericMethod(type);
-            var task = (Task)genericMethod.Invoke(_database, new object[] { query, args });
-            await task.ConfigureAwait(false);
-            var resultProperty = task.GetType().GetProperty("Result");
-            var result = resultProperty.GetValue(task);
-            return (List<object>)result;
+            try
+            {
+                var type = GetModelType(tableName);
+                var method = typeof(SQLiteAsyncConnection).GetMethod("QueryAsync", new Type[] { typeof(string), typeof(object[]) });
+                if (method == null)
+                {
+                    // fallback: try to get by name only
+                    method = typeof(SQLiteAsyncConnection).GetMethod("QueryAsync");
+                }
+
+                var genericMethod = method.MakeGenericMethod(type);
+                var task = (Task)genericMethod.Invoke(_database, new object[] { query, args });
+                await task.ConfigureAwait(false);
+                var resultProperty = task.GetType().GetProperty("Result");
+                var result = resultProperty.GetValue(task);
+
+                // El resultado es una List<T> concreta (por ejemplo List<Jfet>). No se puede castear directamente a List<object>.
+                // Iterar como IEnumerable y convertir a List<object> para evitar InvalidCastException.
+                if (result is System.Collections.IEnumerable enumerable)
+                {
+                    var list = new List<object>();
+                    foreach (var item in enumerable)
+                    {
+                        list.Add(item);
+                    }
+                    return list;
+                }
+
+                return new List<object>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ExecuteQueryAsync error. tableName={tableName}, query={query}, ex={ex}");
+                // devolver lista vacía en caso de error para evitar que la UI se caiga
+                return new List<object>();
+            }
         }
     }
 }

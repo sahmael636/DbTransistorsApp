@@ -20,6 +20,15 @@ namespace DbTransistorsApp.ViewModels
         private Type _modelType;
         private List<PropertyInfo> _displayProperties;
 
+        // Fila preparada para la vista: Id, Name y valores de columnas dinámicas
+        public class TransistorRow
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public List<string> Values { get; set; } = new();
+            public object Original { get; set; }
+        }
+
         [ObservableProperty]
         private ObservableCollection<object> _transistors = new();
 
@@ -76,23 +85,25 @@ namespace DbTransistorsApp.ViewModels
 
             _displayProperties = props;
 
-            // Configurar columnas para el grid
-            var columns = new List<string>();
-            columns.Add("Auto"); // Columna para el nombre
-            foreach (var prop in _displayProperties)
-            {
-                columns.Add("Auto");
-            }
+            // Usar número máximo de columnas entre todas las tablas para alinear
+            int maxParams = ColumnLayoutHelper.MaxParameterCount;
+
+            // Configurar columnas para el grid (1 nombre + maxParams)
+            var columns = new List<string> { "Auto" };
+            for (int i = 0; i < maxParams; i++) columns.Add("Auto");
             ColumnDefinitions = string.Join(",", columns);
 
-            // Configurar encabezados
+            // Configurar encabezados fijos hasta maxParams (llenar con vacíos si faltan)
             HeaderFields.Clear();
             HeaderFields.Add("Nombre");
-            foreach (var prop in _displayProperties)
+            for (int i = 0; i < maxParams; i++)
             {
-                HeaderFields.Add(GetParameterDisplayName(prop.Name));
+                if (i < _displayProperties.Count)
+                    HeaderFields.Add(GetParameterDisplayName(_displayProperties[i].Name));
+                else
+                    HeaderFields.Add(string.Empty);
             }
-            HeaderColumns = string.Join(",", HeaderFields.Select((_, i) => $"Auto"));
+            HeaderColumns = string.Join(",", HeaderFields.Select(_ => "Auto"));
         }
 
         private void ConfigureFilters()
@@ -173,7 +184,30 @@ namespace DbTransistorsApp.ViewModels
                 Transistors.Clear();
                 foreach (var item in all)
                 {
-                    Transistors.Add(item);
+                    // Construir fila con valores según _displayProperties
+                    var row = new TransistorRow();
+                    var propId = item.GetType().GetProperty("Id");
+                    if (propId != null)
+                        row.Id = (int)propId.GetValue(item);
+                    var propName = item.GetType().GetProperty("Name");
+                    row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
+                    // Añadir valores hasta el máximo de parámetros, rellenando con string.Empty si faltan
+                    int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                    for (int i = 0; i < maxParams; i++)
+                    {
+                        if (i < _displayProperties.Count)
+                        {
+                            var p = _displayProperties[i];
+                            var v = p.GetValue(item);
+                            row.Values.Add(v?.ToString() ?? string.Empty);
+                        }
+                        else
+                        {
+                            row.Values.Add(string.Empty);
+                        }
+                    }
+                    row.Original = item;
+                    Transistors.Add(row);
                 }
                 TotalMatches = Transistors.Count;
             }

@@ -1,9 +1,10 @@
 ﻿// Views/TransistorListPage.xaml.cs
 using DbTransistorsApp.ViewModels;
+using System.Diagnostics;
 
 namespace DbTransistorsApp.Views;
 
-public partial class TransistorListPage : ContentPage
+public partial class TransistorListPage : ContentPage, IQueryAttributable
 {
     private readonly TransistorListViewModel _viewModel;
 
@@ -20,14 +21,10 @@ public partial class TransistorListPage : ContentPage
     {
         base.OnAppearing();
 
-        // Obtener parámetros de navegación
+        // Intentamos cargar si el ViewModel ya fue inicializado
         if (BindingContext is TransistorListViewModel vm)
         {
-            if (Shell.Current.CurrentPage?.BindingContext is TransistorListViewModel)
-            {
-                // El ViewModel ya debería estar inicializado
-                await vm.OnAppearingAsync();
-            }
+            await vm.OnAppearingAsync();
         }
     }
 
@@ -35,5 +32,30 @@ public partial class TransistorListPage : ContentPage
     {
         base.OnDisappearing();
         await _viewModel.OnDisappearingAsync();
+    }
+
+    // Recibir parámetros de navegación cuando se usa Shell GoToAsync con parámetros
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        try
+        {
+            if (BindingContext is TransistorListViewModel vm)
+            {
+                // Buscar TableType en mayúsculas o minúsculas
+                if (query.TryGetValue("TableType", out var tableObj) || query.TryGetValue("tableType", out tableObj))
+                {
+                    var s = tableObj?.ToString();
+                    Debug.WriteLine($"TransistorListPage.ApplyQueryAttributes: TableType={s}");
+                    if (!string.IsNullOrEmpty(s) && Enum.TryParse<TableType>(s, true, out var tt))
+                    {
+                        _ = MainThread.InvokeOnMainThreadAsync(async () => await vm.InitializeAsync(tt));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ApplyQueryAttributes error: {ex}");
+        }
     }
 }

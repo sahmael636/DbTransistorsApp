@@ -65,6 +65,14 @@ namespace DbTransistorsApp.ViewModels
         [ObservableProperty]
         private Encapsulado _encapsulado;
 
+        public string EncapsuladoNombre => _encapsulado?.Nombre ?? "Desconocido";
+
+        // Called by the source generator when Encapsulado changes
+        partial void OnEncapsuladoChanged(Encapsulado value)
+        {
+            OnPropertyChanged(nameof(EncapsuladoNombre));
+        }
+
         [ObservableProperty]
         private bool _hasEncapsuladoImage;
 
@@ -73,6 +81,11 @@ namespace DbTransistorsApp.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<object> _replacements = new();
+
+        // Encabezados dinámicos para la tabla de reemplazos
+        public ObservableCollection<string> ReplacementHeaders { get; } = new();
+
+        public string ReplacementHeaderLine => string.Join(" | ", ReplacementHeaders);
 
         [ObservableProperty]
         private int _replacementCount;
@@ -101,6 +114,7 @@ namespace DbTransistorsApp.ViewModels
                 }
 
                 TransistorName = _originalTransistor.Name;
+            System.Diagnostics.Debug.WriteLine($"Transistor loaded: Name={TransistorName}");
 
                 // Crear una copia editable
                 _currentTransistor = CloneTransistor(_originalTransistor);
@@ -119,9 +133,11 @@ namespace DbTransistorsApp.ViewModels
 
                 // Configurar parámetros
                 ConfigureParameters(_currentTransistor);
+            System.Diagnostics.Debug.WriteLine($"Parameters count after configure: {Parameters?.Count}");
 
                 // Cargar reemplazos
                 await LoadReplacementsAsync();
+            System.Diagnostics.Debug.WriteLine($"ReplacementCount after load: {ReplacementCount}");
             }
             catch (Exception ex)
             {
@@ -136,9 +152,10 @@ namespace DbTransistorsApp.ViewModels
         public async Task InitializeAsync(string type, int id)
         {
             System.Diagnostics.Debug.WriteLine($"InitializeAsync start: type={type}, id={id}");
-            _tableType = type;
+            var normalizedType = type?.ToLowerInvariant();
+            _tableType = normalizedType;
             _id = id;
-            _modelType = GetModelType(type);
+            _modelType = GetModelType(normalizedType);
 
             // Cargar el transistor
             _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(type, id);
@@ -175,7 +192,8 @@ namespace DbTransistorsApp.ViewModels
 
         private Type GetModelType(string type)
         {
-            return type switch
+            var t = type?.ToLowerInvariant();
+            return t switch
             {
                 "bjtge" => typeof(BjtGe),
                 "bjtsi" => typeof(BjtSi),
@@ -240,6 +258,16 @@ namespace DbTransistorsApp.ViewModels
                 .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
                            p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
                 .ToList();
+
+            // Configurar encabezados para la tabla de reemplazos
+            ReplacementHeaders.Clear();
+            ReplacementHeaders.Add("Nombre");
+            foreach (var prop in props)
+            {
+                ReplacementHeaders.Add(GetParameterDisplayName(prop.Name));
+            }
+            System.Diagnostics.Debug.WriteLine($"ReplacementHeaders: {string.Join(",", ReplacementHeaders)}");
+            OnPropertyChanged(nameof(ReplacementHeaders));
 
             foreach (var prop in props)
             {
@@ -431,23 +459,58 @@ namespace DbTransistorsApp.ViewModels
 
                 // Añadir el ID para excluir el transistor actual
                 parameters["_id"] = _id;
+                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: table={_tableType}, id={_id}, structId={_currentTransistor?.StructId}, capsCount={_currentTransistor?.CapsIds?.Count}");
+                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync parameters: {string.Join(",", parameters.Select(kv => kv.Key + "=" + kv.Value))}");
 
                 // Obtener reemplazos
                 var replacements = await _databaseService.GetReplacementsAsync(
                     _tableType,
                     parameters,
-                    _currentTransistor.StructId,
-                    _currentTransistor.CapsIds
+                    _currentTransistor?.StructId ?? 0,
+                    _currentTransistor?.CapsIds
                 );
-
+                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: replacements returned count={replacements?.Count}");
                 Replacements.Clear();
 
                 // Convertir a objetos dinámicos para mostrar en la tabla
-                foreach (var item in replacements)
+                if (replacements != null)
                 {
-                    Replacements.Add(item);
+                    foreach (var item in replacements)
+                    {
+                        // Convertir cada item a ReplacementRow si es necesario
+                        var row = new ReplacementRow();
+                        var propId = item.GetType().GetProperty("Id");
+                        if (propId != null)
+                            row.Id = (int)propId.GetValue(item);
+                        var propName = item.GetType().GetProperty("Name");
+                        row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
+
+
+                        // Obtener propiedades dinámicas y rellenar hasta el máximo global
+                        var props2 = item.GetType().GetProperties()
+                            .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
+                            .ToList();
+
+                        int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                        for (int i = 0; i < maxParams; i++)
+                        {
+                            if (i < props2.Count)
+                            {
+                                var v = props2[i].GetValue(item);
+                                row.Values.Add(v?.ToString() ?? string.Empty);
+                            }
+                            else
+                            {
+                                row.Values.Add(string.Empty);
+                            }
+                        }
+
+                        row.Original = item;
+                        Replacements.Add(row);
+                    }
                 }
                 ReplacementCount = Replacements.Count;
+                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: ReplacementCount set to {ReplacementCount}");
             }
             finally
             {

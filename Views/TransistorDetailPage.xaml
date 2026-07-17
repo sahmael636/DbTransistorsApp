@@ -6,7 +6,6 @@
              xmlns:models="clr-namespace:DbTransistorsApp.Models.Base"
              x:Class="DbTransistorsApp.Views.TransistorDetailPage"
              x:Name="ThisPage"
-             x:DataType="viewmodels:TransistorDetailViewModel"
              Title="{Binding TransistorName, StringFormat='Transistor {0}'}">
 
     <Grid>
@@ -46,7 +45,7 @@
                 <BoxView HeightRequest="1" Color="#E0E0E0"/>
 
                 <!-- Parámetros editables -->
-                <Label Text="📊 Parámetros" 
+                <Label Text="{Binding TransistorType, StringFormat='📊 Parámetros ({0})'}" 
                        FontSize="16" 
                        FontAttributes="Bold"
                        Margin="0,10,0,5"/>
@@ -71,7 +70,8 @@
                                                BackgroundColor="White"
                                                HorizontalOptions="Fill">
                                             <Entry.Behaviors>
-                                                <toolkit:EventToCommandBehavior EventName="TextChanged"
+                                                <!-- Ejecutar la actualización al perder el foco para evitar invocar al escribir -->
+                                                <toolkit:EventToCommandBehavior EventName="Unfocused"
                                                                                Command="{Binding BindingContext.ParameterChangedCommand, Source={x:Reference ThisPage}}"
                                                                                CommandParameter="{Binding Name}"/>
                                             </Entry.Behaviors>
@@ -93,9 +93,9 @@
                 <!-- Encapsulado -->
                 <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,10,0,5"/>
 
-                <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto">
                     <Label Grid.Column="0" 
-                           Text="{Binding Encapsulado, StringFormat='📦 Encapsulado: {0}'}" 
+                           Text="{Binding EncapsuladoNombre, StringFormat='📦 Encapsulado: {0}'}" 
                            FontSize="14" 
                            FontAttributes="Bold"
                            VerticalOptions="Center"/>
@@ -126,77 +126,47 @@
                                 HeightRequest="300">
 
                     <CollectionView.Header>
-                        <Grid Padding="10,5" 
-              BackgroundColor="#E3F2FD"
-              ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
-              ColumnSpacing="5">
-
-                            <Label Grid.Column="0" 
-                   Text="Nombre" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"/>
-
-                            <Label Grid.Column="1" 
-                   Text="Pc" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-
-                            <Label Grid.Column="2" 
-                   Text="VCE" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-
-                            <Label Grid.Column="3" 
-                   Text="VCB" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-
-                            <Label Grid.Column="4" 
-                   Text="IC" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-
-                            <Label Grid.Column="5" 
-                   Text="Ft" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-
-                            <Label Grid.Column="6" 
-                   Text="Hfe" 
-                   FontAttributes="Bold" 
-                   FontSize="12"
-                   TextColor="#333333"
-                   HorizontalOptions="Center"/>
-                        </Grid>
+                        <StackLayout Padding="10,5" BackgroundColor="#E3F2FD">
+                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Fill">
+                                <Label Text="Nombre" FontAttributes="Bold" FontSize="12" TextColor="#333333" VerticalOptions="Center" HorizontalOptions="FillAndExpand"/>
+                                <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding ReplacementHeaders}" HorizontalOptions="FillAndExpand">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
+                                                <Label Text="{Binding .}" FontAttributes="Bold" FontSize="12" TextColor="#333333" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
+                                            </Frame>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </HorizontalStackLayout>
+                            </HorizontalStackLayout>
+                        </StackLayout>
                     </CollectionView.Header>
 
                     <!-- ✅ ITEM TEMPLATE - Después del Header -->
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                                <Grid Padding="10,5" 
-                                      BackgroundColor="#E3F2FD"
-                                      ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
-                                      ColumnSpacing="5">
+                            <Grid Padding="10,5" BackgroundColor="#FFFFFF" ColumnDefinitions="Auto, *" ColumnSpacing="5">
 
-                                    <Label Grid.Column="0" Text="Nombre" FontAttributes="Bold" FontSize="12"/>
-                                    <Label Grid.Column="1" Text="Pc" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                    <Label Grid.Column="2" Text="VCE" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                    <Label Grid.Column="3" Text="VCB" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                    <Label Grid.Column="4" Text="IC" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                    <Label Grid.Column="5" Text="Ft" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                    <Label Grid.Column="6" Text="Hfe" FontAttributes="Bold" FontSize="12" HorizontalOptions="Center"/>
-                                </Grid>
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"
+                                                          CommandParameter="{Binding Original}"/>
+                                </Grid.GestureRecognizers>
+
+                                <!-- Nombre -->
+                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="StartAndExpand"/>
+
+                                <!-- Valores dinámicos -->
+                                <HorizontalStackLayout Grid.Column="1" Spacing="10" HorizontalOptions="FillAndExpand" BindableLayout.ItemsSource="{Binding Values}">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
+                                                <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
+                                            </Frame>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </HorizontalStackLayout>
+
+                            </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>

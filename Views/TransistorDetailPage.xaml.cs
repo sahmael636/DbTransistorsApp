@@ -1,6 +1,7 @@
-﻿// Views/TransistorDetailPage.xaml.cs
 using DbTransistorsApp.ViewModels;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 using System.Diagnostics;
 
 namespace DbTransistorsApp.Views;
@@ -8,6 +9,7 @@ namespace DbTransistorsApp.Views;
 public partial class TransistorDetailPage : ContentPage, IQueryAttributable
 {
     private readonly TransistorDetailViewModel _viewModel;
+    private bool _replacementsHeaderBuilt = false;
 
     public TransistorDetailPage(TransistorDetailViewModel viewModel)
     {
@@ -60,18 +62,21 @@ public partial class TransistorDetailPage : ContentPage, IQueryAttributable
                 // Verificar si el ViewModel ya tiene los datos
                 if (string.IsNullOrEmpty(vm.TransistorName))
                 {
-                    // Intentar obtener parámetros desde Shell
-                    if (Shell.Current.CurrentPage?.BindingContext is TransistorDetailViewModel context)
-                    {
-                        // Los parámetros ya deberían estar en el ViewModel
-                        await vm.OnAppearingAsync();
-                    }
-                    else
-                    {
-                        // Obtener desde QueryProperty
-                        var type = Shell.Current.CurrentPage?.BindingContext?.GetType();
-                        // Si no hay datos, el ViewModel se inicializará con los parámetros
-                    }
+                    await vm.OnAppearingAsync();
+                }
+
+                // Construir encabezado de reemplazos si es necesario
+                if (!_replacementsHeaderBuilt && vm.ReplacementHeaders != null)
+                {
+                    BuildReplacementsHeader(vm);
+                    _replacementsHeaderBuilt = true;
+                }
+
+                // Construir ItemTemplate dinámico para Replacements
+                var coll = this.FindByName<CollectionView>("ReplacementsCollection");
+                if (coll != null && coll.ItemTemplate == null)
+                {
+                    BuildReplacementsItemTemplate();
                 }
             }
         }
@@ -85,5 +90,87 @@ public partial class TransistorDetailPage : ContentPage, IQueryAttributable
     {
         base.OnDisappearing();
         await _viewModel.OnDisappearingAsync();
+    }
+
+    private void BuildReplacementsHeader(TransistorDetailViewModel vm)
+    {
+        try
+        {
+            var grid = this.FindByName<Grid>("ReplacementsHeader");
+            if (grid == null)
+                return;
+
+            grid.ColumnDefinitions.Clear();
+            grid.Children.Clear();
+
+            // Columna fija Nombre
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            var lblName = new Label { Text = "Nombre", FontAttributes = FontAttributes.Bold, TextColor = Colors.Black, VerticalOptions = LayoutOptions.Center };
+            grid.Add(lblName, 0, 0);
+
+            var stack = new HorizontalStackLayout { Spacing = 0 };
+            for (int i = 0; i < vm.ReplacementHeaders.Count; i++)
+            {
+                var border = new Border { Padding = 4, StrokeThickness = 0, BackgroundColor = Colors.Transparent, WidthRequest = vm.ColumnWidth };
+                var lbl = new Label { Text = vm.ReplacementHeaders[i], FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center };
+                border.Content = lbl;
+                stack.Add(border);
+            }
+            grid.Add(stack, 1, 0);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BuildReplacementsHeader error: {ex}");
+        }
+    }
+
+    private void BuildReplacementsItemTemplate()
+    {
+        try
+        {
+            var collection = this.FindByName<CollectionView>("ReplacementsCollection");
+            if (collection == null) return;
+
+            var dt = new DataTemplate(() =>
+            {
+                var grid = new Grid { Padding = new Thickness(10, 5) };
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                var tap = new TapGestureRecognizer();
+                tap.SetBinding(TapGestureRecognizer.CommandProperty, new Binding("BindingContext.SelectTransistorCommand", source: this));
+                tap.SetBinding(TapGestureRecognizer.CommandParameterProperty, new Binding("Original"));
+
+                var nameLabel = new Label();
+                nameLabel.SetBinding(Label.TextProperty, "Name");
+                nameLabel.VerticalOptions = LayoutOptions.Center;
+                nameLabel.WidthRequest = 150;
+                grid.Add(nameLabel, 0, 0);
+
+                var stack = new HorizontalStackLayout { Spacing = 0 };
+                int max = ColumnLayoutHelper.MaxParameterCount;
+                for (int i = 0; i < max; i++)
+                {
+                    var border = new Border { Padding = 4, StrokeThickness = 0, BackgroundColor = Colors.Transparent };
+                    var lbl = new Label { VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center, LineBreakMode = LineBreakMode.TailTruncation };
+                    lbl.SetBinding(Label.TextProperty, new Binding($"Values[{i}]") );
+                    border.Content = lbl;
+                    border.WidthRequest = ((TransistorDetailViewModel)BindingContext).ColumnWidth;
+                    stack.Add(border);
+                }
+
+                grid.Add(stack, 1, 0);
+                grid.GestureRecognizers.Add(tap);
+                return grid;
+            });
+
+            collection.ItemTemplate = dt;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BuildReplacementsItemTemplate error: {ex}");
+        }
     }
 }

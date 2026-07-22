@@ -7,6 +7,8 @@ namespace DbTransistorsApp.Views;
 public partial class TransistorListPage : ContentPage, IQueryAttributable
 {
     private readonly TransistorListViewModel _viewModel;
+        private bool _headerBuilt = false;
+        private bool _templateBuilt = false;
 
     public TransistorListPage(TransistorListViewModel viewModel)
     {
@@ -24,7 +26,106 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
         // Intentamos cargar si el ViewModel ya fue inicializado
         if (BindingContext is TransistorListViewModel vm)
         {
+            // Cargar datos (en VM puede usar background tasks)
             await vm.OnAppearingAsync();
+
+            // Construir encabezado una vez el ViewModel tenga HeaderFields
+            if (!_headerBuilt && vm.HeaderFields != null)
+            {
+                BuildHeader(vm);
+                _headerBuilt = true;
+            }
+
+            // Construir DataTemplate dinámico una vez
+            if (!_templateBuilt)
+            {
+                BuildItemTemplate();
+                _templateBuilt = true;
+            }
+        }
+    }
+
+    private void BuildItemTemplate()
+    {
+        try
+        {
+            var collection = this.FindByName<CollectionView>("TransistorsCollection");
+            if (collection == null) return;
+
+            var dt = new DataTemplate(() =>
+            {
+                var grid = new Grid { Padding = 5 };
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+                var tap = new TapGestureRecognizer();
+                tap.SetBinding(TapGestureRecognizer.CommandProperty, new Binding("BindingContext.SelectTransistorCommand", source: this));
+                tap.SetBinding(TapGestureRecognizer.CommandParameterProperty, new Binding("Original"));
+
+                var nameLabel = new Label();
+                nameLabel.SetBinding(Label.TextProperty, "Name");
+                nameLabel.VerticalOptions = LayoutOptions.Center;
+                nameLabel.WidthRequest = 150;
+                grid.Add(nameLabel, 0, 0);
+
+                var stack = new HorizontalStackLayout { Spacing = 0 };
+                // agregar placeholders para MaxParameterCount celdas; cada celda bindeará a Values[i]
+                int max = ColumnLayoutHelper.MaxParameterCount;
+                for (int i = 0; i < max; i++)
+                {
+                    var border = new Border { Padding = 4, StrokeThickness = 0, BackgroundColor = Colors.Transparent };
+                    var lbl = new Label { VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center, LineBreakMode = LineBreakMode.TailTruncation };
+                    // Bind to Values[i] via indexer path
+                    lbl.SetBinding(Label.TextProperty, new Binding($"Values[{i}]") );
+                    border.Content = lbl;
+                    border.WidthRequest = ((TransistorListViewModel)BindingContext).ColumnWidth;
+                    stack.Add(border);
+                }
+
+                grid.Add(stack, 1, 0);
+                grid.GestureRecognizers.Add(tap);
+                return grid;
+            });
+
+            collection.ItemTemplate = dt;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BuildItemTemplate error: {ex}");
+        }
+    }
+
+    private void BuildHeader(TransistorListViewModel vm)
+    {
+        try
+        {
+            // Acceder al Grid nombrado HeaderArea en XAML
+            var grid = this.FindByName<Grid>("HeaderArea");
+            grid.ColumnDefinitions.Clear();
+            grid.Children.Clear();
+
+            // Columna fija para Nombre
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            // Contenedor para parámetros
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+
+            var lblName = new Label { Text = "Nombre", TextColor = Colors.White, FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center };
+            grid.Add(lblName, 0, 0);
+
+            var stack = new HorizontalStackLayout { Spacing = 0 };
+            for (int i = 0; i < vm.HeaderFields.Count; i++)
+            {
+                var frame = new Frame { Padding = 4, CornerRadius = 0, HasShadow = false, BackgroundColor = Colors.Transparent, WidthRequest = vm.ColumnWidth };
+                var lbl = new Label { Text = vm.HeaderFields[i], TextColor = Colors.White, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center, LineBreakMode = LineBreakMode.TailTruncation };
+                frame.Content = lbl;
+                stack.Add(frame);
+            }
+
+            grid.Add(stack, 1, 0);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BuildHeader error: {ex}");
         }
     }
 

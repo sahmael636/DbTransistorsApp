@@ -85,6 +85,9 @@ namespace DbTransistorsApp.ViewModels
         // Encabezados dinámicos para la tabla de reemplazos
         public ObservableCollection<string> ReplacementHeaders { get; } = new();
 
+        [ObservableProperty]
+        private double _columnWidth;
+
         public string ReplacementHeaderLine => string.Join(" | ", ReplacementHeaders);
 
         [ObservableProperty]
@@ -95,6 +98,7 @@ namespace DbTransistorsApp.ViewModels
             _databaseService = databaseService;
             _navigationService = navigationService;
             _dialogService = dialogService;
+            ColumnWidth = 80;
         }
 
         // ✅ Método para cargar datos
@@ -259,9 +263,8 @@ namespace DbTransistorsApp.ViewModels
                            p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
                 .ToList();
 
-            // Configurar encabezados para la tabla de reemplazos
+            // Configurar encabezados para la tabla de reemplazos (sin 'Nombre', que se muestra aparte)
             ReplacementHeaders.Clear();
-            ReplacementHeaders.Add("Nombre");
             foreach (var prop in props)
             {
                 ReplacementHeaders.Add(GetParameterDisplayName(prop.Name));

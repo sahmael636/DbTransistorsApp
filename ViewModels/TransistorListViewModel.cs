@@ -64,7 +64,7 @@ namespace DbTransistorsApp.ViewModels
             _databaseService = databaseService;
             _navigationService = navigationService;
             // ancho aproximado por columna en device-independent units
-            ColumnWidth = 100;
+            ColumnWidth = 80; // reducir para mejor ajuste y rendimiento
         }
 
         public async Task InitializeAsync(TableType tableType)
@@ -76,6 +76,21 @@ namespace DbTransistorsApp.ViewModels
 
             // Configurar propiedades a mostrar
             ConfigureDisplayProperties();
+
+            // Calcular ancho de columna dinámicamente según ancho de pantalla
+            try
+            {
+                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+                double screenDp = main.Width / main.Density;
+                double nameWidth = 150;
+                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                double available = Math.Max(screenDp - nameWidth - 40, 200);
+                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+            }
+            catch
+            {
+                ColumnWidth = 80; // fallback
+            }
 
             // Configurar filtros
             ConfigureFilters();
@@ -106,7 +121,6 @@ namespace DbTransistorsApp.ViewModels
 
             // Configurar encabezados fijos hasta maxParams (llenar con vacíos si faltan)
             HeaderFields.Clear();
-            HeaderFields.Add("Nombre");
             for (int i = 0; i < maxParams; i++)
             {
                 if (i < _displayProperties.Count)

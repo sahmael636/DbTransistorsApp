@@ -121,31 +121,19 @@
                        FontSize="12" 
                        TextColor="Gray"/>
 
+                <!-- Encabezado fijo para reemplazos (construido en code-behind) -->
+                <Grid x:Name="ReplacementsHeader" Padding="10,5" BackgroundColor="#E3F2FD" ColumnDefinitions="150,*">
+                    <!-- Se poblará desde code-behind para asegurar alineación -->
+                </Grid>
+
                 <!-- Tabla de reemplazos -->
-                <CollectionView ItemsSource="{Binding Replacements}"
+                <CollectionView x:Name="ReplacementsCollection" ItemsSource="{Binding Replacements}"
                                 HeightRequest="300">
 
-                    <CollectionView.Header>
-                        <StackLayout Padding="10,5" BackgroundColor="#E3F2FD">
-                            <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Fill">
-                                <Label Text="Nombre" FontAttributes="Bold" FontSize="12" TextColor="#333333" VerticalOptions="Center" HorizontalOptions="FillAndExpand"/>
-                                <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding ReplacementHeaders}" HorizontalOptions="FillAndExpand">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate>
-                                            <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
-                                                <Label Text="{Binding .}" FontAttributes="Bold" FontSize="12" TextColor="#333333" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
-                                            </Frame>
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </HorizontalStackLayout>
-                            </HorizontalStackLayout>
-                        </StackLayout>
-                    </CollectionView.Header>
-
-                    <!-- ✅ ITEM TEMPLATE - Después del Header -->
+                    <!-- ITEM TEMPLATE - Después del Header -->
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="10,5" BackgroundColor="#FFFFFF" ColumnDefinitions="Auto, *" ColumnSpacing="5">
+                            <Grid Padding="10,5" BackgroundColor="#FFFFFF" ColumnDefinitions="150,*" ColumnSpacing="5">
 
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"
@@ -153,15 +141,15 @@
                                 </Grid.GestureRecognizers>
 
                                 <!-- Nombre -->
-                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="StartAndExpand"/>
+                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="Start" WidthRequest="150"/>
 
                                 <!-- Valores dinámicos -->
-                                <HorizontalStackLayout Grid.Column="1" Spacing="10" HorizontalOptions="FillAndExpand" BindableLayout.ItemsSource="{Binding Values}">
+                                <HorizontalStackLayout Grid.Column="1" Spacing="0" BindableLayout.ItemsSource="{Binding Values}">
                                     <BindableLayout.ItemTemplate>
                                         <DataTemplate>
-                                            <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
-                                                <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
-                                            </Frame>
+                                            <Border Padding="4" StrokeThickness="0" BackgroundColor="Transparent" WidthRequest="{Binding BindingContext.ColumnWidth, Source={x:Reference ThisPage}}">
+                                                <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" LineBreakMode="TailTruncation" HorizontalTextAlignment="Center" />
+                                            </Border>
                                         </DataTemplate>
                                     </BindableLayout.ItemTemplate>
                                 </HorizontalStackLayout>

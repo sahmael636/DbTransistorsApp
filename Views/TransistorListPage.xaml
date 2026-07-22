@@ -118,50 +118,55 @@
 
         <!-- Grid para CollectionView + ActivityIndicator -->
         <Grid Grid.Row="2">
-            <!-- Tabla de transistores - SIN IsBusy -->
-            <CollectionView ItemsSource="{Binding Transistors}"
-                            SelectionMode="Single"
-                            IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
 
-                <CollectionView.Header>
-                    <StackLayout Padding="10" BackgroundColor="#2196F3">
-                        <HorizontalStackLayout Spacing="10" VerticalOptions="Center" HorizontalOptions="Fill">
-                            <Label Text="Nombre" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" />
-                        <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding HeaderFields}" HorizontalOptions="FillAndExpand">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate>
-                                        <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
-                                            <Label Text="{Binding .}" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
-                                        </Frame>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </HorizontalStackLayout>
+            <!-- Contenido con desplazamiento horizontal compartido (header + filas) -->
+            <ScrollView Orientation="Horizontal" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" x:Name="SharedHorizontalScroll">
+                <VerticalStackLayout Spacing="0">
+                    <!-- Encabezado fijo (no se desplaza verticalmente) dentro del área horizontal compartida -->
+                    <Grid Padding="10" BackgroundColor="#2196F3" ColumnDefinitions="150,*">
+                        <Label Grid.Column="0" Text="Nombre" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" HorizontalOptions="Start" WidthRequest="150" />
+                        <HorizontalStackLayout Grid.Column="1" Spacing="0" BindableLayout.ItemsSource="{Binding HeaderFields}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" WidthRequest="{Binding BindingContext.ColumnWidth, Source={x:Reference ThisPage}}">
+                                        <Label Text="{Binding .}" TextColor="White" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" LineBreakMode="TailTruncation" HorizontalTextAlignment="Center" />
+                                    </Frame>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
                         </HorizontalStackLayout>
-                    </StackLayout>
-                </CollectionView.Header>
+                    </Grid>
 
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <HorizontalStackLayout Padding="5" Spacing="10">
-                            <HorizontalStackLayout.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}" CommandParameter="{Binding Original}" />
-                            </HorizontalStackLayout.GestureRecognizers>
+                    <!-- Tabla de transistores - SIN IsBusy; la CollectionView maneja el desplazamiento vertical -->
+                    <CollectionView ItemsSource="{Binding Transistors}"
+                                    SelectionMode="Single"
+                                    IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                                    VerticalOptions="FillAndExpand"
+                                    HeightRequest="600">
 
-                            <Label Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="StartAndExpand" />
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="5" ColumnDefinitions="150,*">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}" CommandParameter="{Binding Original}" />
+                                    </Grid.GestureRecognizers>
 
-                            <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Values}" HorizontalOptions="FillAndExpand">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate>
-                                        <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" HorizontalOptions="FillAndExpand">
-                                            <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" HorizontalOptions="FillAndExpand" LineBreakMode="TailTruncation"/>
-                                        </Frame>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </HorizontalStackLayout>
-                        </HorizontalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+                                    <Label Grid.Column="0" Text="{Binding Name}" FontSize="12" VerticalOptions="Center" WidthRequest="150" />
+
+                                    <HorizontalStackLayout Grid.Column="1" Spacing="0" BindableLayout.ItemsSource="{Binding Values}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate>
+                                                <Frame Padding="4" CornerRadius="0" HasShadow="False" BackgroundColor="Transparent" WidthRequest="{Binding BindingContext.ColumnWidth, Source={x:Reference ThisPage}}">
+                                                    <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" LineBreakMode="TailTruncation" HorizontalTextAlignment="Center" />
+                                                </Frame>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
 
             <!-- ActivityIndicator para carga -->
             <ActivityIndicator IsRunning="{Binding IsBusy}"

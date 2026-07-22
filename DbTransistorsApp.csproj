@@ -91,6 +91,12 @@
 		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiXaml Update="Views\Controls\FixedColumnsHeader.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
 	<!-- XAML files use the default SourceGen inflator; explicit MauiXaml Update entries removed to avoid duplicate generated files -->
 
 </Project>

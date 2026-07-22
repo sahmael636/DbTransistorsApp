@@ -26,7 +26,13 @@ namespace DbTransistorsApp.ViewModels
             public int Id { get; set; }
             public string Name { get; set; }
             public List<string> Values { get; set; } = new();
+            public List<CellItem> Cells { get; set; } = new();
             public object Original { get; set; }
+            public class CellItem
+            {
+                public int Index { get; set; }
+                public string Text { get; set; }
+            }
         }
 
         [ObservableProperty]
@@ -50,10 +56,15 @@ namespace DbTransistorsApp.ViewModels
         [ObservableProperty]
         private string _columnDefinitions;
 
+        [ObservableProperty]
+        private double _columnWidth;
+
         public TransistorListViewModel(DatabaseService databaseService, NavigationService navigationService)
         {
             _databaseService = databaseService;
             _navigationService = navigationService;
+            // ancho aproximado por columna en device-independent units
+            ColumnWidth = 100;
         }
 
         public async Task InitializeAsync(TableType tableType)
@@ -330,5 +341,7 @@ namespace DbTransistorsApp.ViewModels
                 _ => fieldName
             };
         }
+
+
     }
 }

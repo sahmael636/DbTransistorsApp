@@ -18,7 +18,8 @@ namespace DbTransistorsApp.ViewModels
                 {
                     var model = t.GetModelType();
                     var props = model.GetProperties()
-                        .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
+                        //.Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
+                        .Where(p => p.Name != "Id" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
                         .Count();
                     if (props > max) max = props;
                 }

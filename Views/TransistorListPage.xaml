@@ -115,26 +115,59 @@
                    FontSize="12"
                    TextColor="Gray"/>
         </Grid>
-
-        <!-- Grid para CollectionView + ActivityIndicator -->
+        
+        <!-- Grid para CollectionView + ActivityIndicator --><!--
         <Grid Grid.Row="2">
-            <!-- Encabezado fijo (no se desplaza verticalmente) -->
+            --><!-- Encabezado fijo (no se desplaza verticalmente) --><!--
                 <Grid x:Name="HeaderArea" Padding="10" BackgroundColor="#2196F3" ColumnDefinitions="150,*">
-                    <!-- Header grid will be populated from code-behind to ensure exact column widths and alignment -->
+                    --><!-- Header grid will be populated from code-behind to ensure exact column widths and alignment --><!--
                 </Grid>
 
-            <!-- CollectionView vertical con filas; ItemTemplate se generará en code-behind para preservar virtualización -->
+            --><!-- CollectionView vertical con filas; ItemTemplate se generará en code-behind para preservar virtualización --><!--
             <CollectionView x:Name="TransistorsCollection" ItemsSource="{Binding Transistors}"
                             SelectionMode="Single"
                             IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                             VerticalOptions="FillAndExpand">
             </CollectionView>
 
-            <!-- ActivityIndicator para carga -->
+            --><!-- ActivityIndicator para carga --><!--
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                                IsVisible="{Binding IsBusy}"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"/>
+        </Grid>-->
+
+        <!-- Grid para la tabla -->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Encabezado FIJO -->
+                <RowDefinition Height="*"/>
+                <!-- Datos scrolleables -->
+            </Grid.RowDefinitions>
+
+            <!-- ENCABEZADO FIJO -->
+            <Grid x:Name="HeaderArea" Grid.Row="0" BackgroundColor="#2196F3" Padding="0">
+                <!-- Se construye en BuildHeader -->
+            </Grid>
+
+            <!-- DATOS SCROLLEABLES CON CollectionView -->
+            <CollectionView x:Name="TransistorsCollection" 
+                    Grid.Row="1"
+                    ItemsSource="{Binding Transistors}"
+                    SelectionMode="Single"
+                    IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
+                <!-- El ItemTemplate se construye en BuildItemTemplate -->
+            </CollectionView>
+
+            <!-- ActivityIndicator -->
+            <ActivityIndicator Grid.RowSpan="2"
+                       IsRunning="{Binding IsBusy}"
+                       IsVisible="{Binding IsBusy}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
         </Grid>
+
+
     </Grid>
 </ContentPage>

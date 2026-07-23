@@ -199,7 +199,7 @@ namespace DbTransistorsApp.ViewModels
         {
             // Ya configurado en ConfigureDisplayProperties
         }
-
+        /*
         private async Task LoadTransistorsAsync()
         {
             try
@@ -241,6 +241,29 @@ namespace DbTransistorsApp.ViewModels
                 IsBusy = false;
             }
         }
+        */
+
+        private async Task LoadTransistorsAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                var all = await _databaseService.GetAllByTableAsync(_tableType.GetTableName());
+                Transistors.Clear();
+                foreach (var item in all)
+                {
+                    var row = CreateRowFromObject(item);
+                    Transistors.Add(row);
+                }
+                TotalMatches = Transistors.Count;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /*
 
         [RelayCommand]
         private async Task ApplyFilters()
@@ -329,7 +352,122 @@ namespace DbTransistorsApp.ViewModels
                     });
             }
         }
+        */
 
+        [RelayCommand]
+        private async Task ApplyFilters()
+        {
+            try
+            {
+                IsBusy = true;
+
+                var parameters = new Dictionary<string, object>();
+                var textFilters = new Dictionary<string, string>();
+
+                foreach (var filter in FilterFields)
+                {
+                    if (filter.IsTextFilter)
+                    {
+                        if (!string.IsNullOrWhiteSpace(filter.TextValue))
+                        {
+                            textFilters[filter.Field] = filter.TextValue;
+                        }
+                    }
+                    else
+                    {
+                        if (double.TryParse(filter.MinValue, out double min) && min > 0)
+                        {
+                            parameters[$"{filter.Field} >= @{filter.Field}_min"] = min;
+                        }
+                        if (double.TryParse(filter.MaxValue, out double max) && max < 9999)
+                        {
+                            parameters[$"{filter.Field} <= @{filter.Field}_max"] = max;
+                        }
+                    }
+                }
+
+                var results = await _databaseService.GetFilteredTransistorsAsync(
+                    _tableType.GetTableName(),
+                    parameters,
+                    textFilters);
+
+                Transistors.Clear();
+                foreach (var item in results)
+                {
+                    // ✅ CORRECCIÓN: Crear TransistorRow en lugar de agregar item directamente
+                    var row = CreateRowFromObject(item);
+                    Transistors.Add(row);
+                }
+                TotalMatches = Transistors.Count;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        [RelayCommand]
+        private void ClearFilters()
+        {
+            foreach (var filter in FilterFields)
+            {
+                if (filter.IsTextFilter)
+                {
+                    filter.TextValue = string.Empty;
+                }
+                else
+                {
+                    filter.MinValue = "0";
+                    filter.MaxValue = "9999";
+                }
+            }
+
+            // ✅ Recargar todos los transistores con CreateRowFromObject
+            LoadTransistorsAsync();
+        }
+
+        [RelayCommand]
+        private async Task SelectTransistor(object transistor)
+        {
+            try
+            {
+                if (transistor is TransistorRow row)
+                {
+                    // Obtener el objeto original del row
+                    var original = row.Original;
+                    var prop = original.GetType().GetProperty("Id");
+                    if (prop != null)
+                    {
+                        int id = (int)prop.GetValue(original);
+                        await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
+                            new Dictionary<string, object>
+                            {
+                        { "Type", _tableType.GetTableName() },
+                        { "Id", id }
+                            });
+                    }
+                }
+                else
+                {
+                    // Fallback para compatibilidad
+                    var prop = transistor.GetType().GetProperty("Id");
+                    if (prop != null)
+                    {
+                        int id = (int)prop.GetValue(transistor);
+                        await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
+                            new Dictionary<string, object>
+                            {
+                        { "Type", _tableType.GetTableName() },
+                        { "Id", id }
+                            });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SelectTransistor error: {ex}");
+            }
+        }
         private string GetParameterDisplayName(string fieldName)
         {
             return fieldName switch
@@ -354,6 +492,53 @@ namespace DbTransistorsApp.ViewModels
                 "Rds" => "RDS",
                 _ => fieldName
             };
+        }
+
+        // ViewModels/TransistorListViewModel.cs
+
+        private TransistorRow CreateRowFromObject(object item)
+        {
+            var row = new TransistorRow();
+
+            try
+            {
+                // Obtener Id
+                var propId = item.GetType().GetProperty("Id");
+                if (propId != null)
+                    row.Id = (int)propId.GetValue(item);
+
+                // Obtener Name
+                var propName = item.GetType().GetProperty("Name");
+                row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
+
+                // Obtener valores de parámetros
+                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                for (int i = 0; i < maxParams; i++)
+                {
+                    if (i < _displayProperties.Count)
+                    {
+                        var p = _displayProperties[i];
+                        var v = p.GetValue(item);
+                        row.Values.Add(v?.ToString() ?? string.Empty);
+                    }
+                    else
+                    {
+                        row.Values.Add(string.Empty);
+                    }
+                }
+
+                row.Original = item;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CreateRowFromObject error: {ex}");
+                // Asegurar que Values tenga al menos el número máximo de elementos
+                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                while (row.Values.Count < maxParams)
+                    row.Values.Add(string.Empty);
+            }
+
+            return row;
         }
 
 

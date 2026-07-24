@@ -2,6 +2,7 @@ using DbTransistorsApp.ViewModels;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace DbTransistorsApp.Views;
@@ -16,6 +17,19 @@ public partial class TransistorDetailPage : ContentPage, IQueryAttributable
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = _viewModel;
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+    }
+
+    private void ViewModel_PropertyChanged(object sender,
+    PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TransistorDetailViewModel.ReplacementHeaders))
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                BuildReplacementsHeader(_viewModel);
+            });
+        }
     }
 
     // Recibir parámetros de navegación cuando se usa Shell GoToAsync con parámetros
@@ -110,10 +124,22 @@ public partial class TransistorDetailPage : ContentPage, IQueryAttributable
             var lblName = new Label { Text = "Nombre", FontAttributes = FontAttributes.Bold, TextColor = Colors.Black, VerticalOptions = LayoutOptions.Center };
             grid.Add(lblName, 0, 0);
 
-            var stack = new HorizontalStackLayout { Spacing = 0 };
+            var stack = new HorizontalStackLayout
+            {
+                Spacing = 0,
+                HorizontalOptions = LayoutOptions.Fill,
+                VerticalOptions = LayoutOptions.Center
+            };
             for (int i = 0; i < vm.ReplacementHeaders.Count; i++)
             {
-                var border = new Border { Padding = 4, StrokeThickness = 0, BackgroundColor = Colors.Transparent, WidthRequest = vm.ColumnWidth };
+                var border = new Border
+                {
+                    Padding = new Thickness(4, 0),
+                    StrokeThickness = 0,
+                    BackgroundColor = Colors.Transparent,
+                    WidthRequest = vm.ColumnWidth,
+                    HeightRequest = 40
+                };
                 var lbl = new Label { Text = vm.ReplacementHeaders[i], FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center };
                 border.Content = lbl;
                 stack.Add(border);
@@ -128,49 +154,90 @@ public partial class TransistorDetailPage : ContentPage, IQueryAttributable
 
     private void BuildReplacementsItemTemplate()
     {
-        try
-        {
-            var collection = this.FindByName<CollectionView>("ReplacementsCollection");
-            if (collection == null) return;
+        var collection = this.FindByName<CollectionView>("ReplacementsCollection");
+        if (collection == null) return;
 
-            var dt = new DataTemplate(() =>
+        var vm = (TransistorDetailViewModel)BindingContext;
+
+        collection.ItemTemplate = new DataTemplate(() =>
+        {
+            var grid = new Grid
             {
-                var grid = new Grid { Padding = new Thickness(10, 5) };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                Padding = new Thickness(5, 2),
+                BackgroundColor = Colors.Transparent
+            };
 
-                var tap = new TapGestureRecognizer();
-                tap.SetBinding(TapGestureRecognizer.CommandProperty, new Binding("BindingContext.SelectTransistorCommand", source: this));
-                tap.SetBinding(TapGestureRecognizer.CommandParameterProperty, new Binding("Original"));
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
 
-                var nameLabel = new Label();
-                nameLabel.SetBinding(Label.TextProperty, "Name");
-                nameLabel.VerticalOptions = LayoutOptions.Center;
-                nameLabel.WidthRequest = 150;
-                grid.Add(nameLabel, 0, 0);
+            var tap = new TapGestureRecognizer();
+            tap.SetBinding(
+                TapGestureRecognizer.CommandProperty,
+                new Binding("BindingContext.SelectTransistorCommand", source: this));
 
-                var stack = new HorizontalStackLayout { Spacing = 0 };
-                int max = ColumnLayoutHelper.MaxParameterCount;
-                for (int i = 0; i < max; i++)
+            tap.SetBinding(
+                TapGestureRecognizer.CommandParameterProperty,
+                new Binding("Original"));
+
+            grid.GestureRecognizers.Add(tap);
+
+            var lblName = new Label
+            {
+                FontSize = 13,
+                VerticalOptions = LayoutOptions.Center,
+                HorizontalOptions = LayoutOptions.Center,
+                Padding = new Thickness(5, 6),
+                TextColor = Colors.Black
+            };
+
+            lblName.SetBinding(Label.TextProperty, "Name");
+
+            Grid.SetColumn(lblName, 0);
+
+            grid.Children.Add(lblName);
+
+            var stack = new HorizontalStackLayout
+            {
+                Spacing = 0,
+                HorizontalOptions = LayoutOptions.Fill,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            int max = ColumnLayoutHelper.MaxParameterCount;
+
+            for (int i = 0; i < max; i++)
+            {
+                var border = new Border
                 {
-                    var border = new Border { Padding = 4, StrokeThickness = 0, BackgroundColor = Colors.Transparent };
-                    var lbl = new Label { VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center, LineBreakMode = LineBreakMode.TailTruncation };
-                    lbl.SetBinding(Label.TextProperty, new Binding($"Values[{i}]") );
-                    border.Content = lbl;
-                    border.WidthRequest = ((TransistorDetailViewModel)BindingContext).ColumnWidth;
-                    stack.Add(border);
-                }
+                    Padding = new Thickness(4, 0),
+                    StrokeThickness = 0,
+                    BackgroundColor = Colors.Transparent,
+                    WidthRequest = vm.ColumnWidth,
+                    HeightRequest = 38
+                };
 
-                grid.Add(stack, 1, 0);
-                grid.GestureRecognizers.Add(tap);
-                return grid;
-            });
+                var lbl = new Label
+                {
+                    FontSize = 13,
+                    VerticalOptions = LayoutOptions.Center,
+                    HorizontalTextAlignment = TextAlignment.Center,
+                    VerticalTextAlignment = TextAlignment.Center,
+                    LineBreakMode = LineBreakMode.TailTruncation
+                };
 
-            collection.ItemTemplate = dt;
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"BuildReplacementsItemTemplate error: {ex}");
-        }
+                lbl.SetBinding(Label.TextProperty,
+                    new Binding($"Values[{i}]"));
+
+                border.Content = lbl;
+
+                stack.Children.Add(border);
+            }
+
+            Grid.SetColumn(stack, 1);
+
+            grid.Children.Add(stack);
+
+            return grid;
+        });
     }
 }

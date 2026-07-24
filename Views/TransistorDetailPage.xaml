@@ -93,7 +93,7 @@
                 <!-- Encapsulado -->
                 <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,10,0,5"/>
 
-                    <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="*,Auto">
                     <Label Grid.Column="0" 
                            Text="{Binding EncapsuladoNombre, StringFormat='📦 Encapsulado: {0}'}" 
                            FontSize="14" 
@@ -127,37 +127,10 @@
                 </Grid>
 
                 <!-- Tabla de reemplazos -->
-                <CollectionView x:Name="ReplacementsCollection" ItemsSource="{Binding Replacements}"
-                                HeightRequest="300">
-
-                    <!-- ITEM TEMPLATE - Después del Header -->
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Padding="10,5" BackgroundColor="#FFFFFF" ColumnDefinitions="150,*" ColumnSpacing="5">
-
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"
-                                                          CommandParameter="{Binding Original}"/>
-                                </Grid.GestureRecognizers>
-
-                                <!-- Nombre -->
-                                <Label Grid.Column="0" Text="{Binding Name}" FontSize="12" VerticalOptions="Center" HorizontalOptions="Start" WidthRequest="150"/>
-
-                                <!-- Valores dinámicos -->
-                                <HorizontalStackLayout Grid.Column="1" Spacing="0" BindableLayout.ItemsSource="{Binding Values}">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Padding="4" StrokeThickness="0" BackgroundColor="Transparent" WidthRequest="{Binding BindingContext.ColumnWidth, Source={x:Reference ThisPage}}">
-                                                <Label Text="{Binding .}" FontSize="12" VerticalOptions="Center" LineBreakMode="TailTruncation" HorizontalTextAlignment="Center" />
-                                            </Border>
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </HorizontalStackLayout>
-
-                            </Grid>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                <CollectionView
+    x:Name="ReplacementsCollection"
+    ItemsSource="{Binding Replacements}"
+    HeightRequest="300"/>
             </StackLayout>
         </ScrollView>
 

@@ -98,7 +98,22 @@ namespace DbTransistorsApp.ViewModels
             _databaseService = databaseService;
             _navigationService = navigationService;
             _dialogService = dialogService;
-            ColumnWidth = 80;
+            try
+            {
+                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+                double screenDp = main.Width / main.Density;
+                double nameWidth = 150;
+                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                double available = Math.Max(screenDp - nameWidth - 40, 200);
+
+                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+
+                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+            }
+            catch
+            {
+                ColumnWidth = 80;
+            }
         }
 
         // ✅ Método para cargar datos
@@ -118,7 +133,7 @@ namespace DbTransistorsApp.ViewModels
                 }
 
                 TransistorName = _originalTransistor.Name;
-            System.Diagnostics.Debug.WriteLine($"Transistor loaded: Name={TransistorName}");
+                System.Diagnostics.Debug.WriteLine($"Transistor loaded: Name={TransistorName}");
 
                 // Crear una copia editable
                 _currentTransistor = CloneTransistor(_originalTransistor);
@@ -135,13 +150,30 @@ namespace DbTransistorsApp.ViewModels
                 Encapsulado = caps.FirstOrDefault();
                 HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
 
+                try
+                {
+                    var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+                    double screenDp = main.Width / main.Density;
+                    double nameWidth = 150;
+                    int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                    double available = Math.Max(screenDp - nameWidth - 40, 200);
+
+                    ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+
+                    System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+                }
+                catch
+                {
+                    ColumnWidth = 80;
+                }
+
                 // Configurar parámetros
                 ConfigureParameters(_currentTransistor);
-            System.Diagnostics.Debug.WriteLine($"Parameters count after configure: {Parameters?.Count}");
+                System.Diagnostics.Debug.WriteLine($"Parameters count after configure: {Parameters?.Count}");
 
                 // Cargar reemplazos
                 await LoadReplacementsAsync();
-            System.Diagnostics.Debug.WriteLine($"ReplacementCount after load: {ReplacementCount}");
+                System.Diagnostics.Debug.WriteLine($"ReplacementCount after load: {ReplacementCount}");
             }
             catch (Exception ex)
             {
@@ -186,6 +218,23 @@ namespace DbTransistorsApp.ViewModels
             var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(type, id);
             Encapsulado = caps.FirstOrDefault();
             HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
+
+            try
+            {
+                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+                double screenDp = main.Width / main.Density;
+                double nameWidth = 150;
+                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+                double available = Math.Max(screenDp - nameWidth - 40, 200);
+
+                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+
+                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+            }
+            catch
+            {
+                ColumnWidth = 80;
+            }
 
             // Configurar parámetros
             ConfigureParameters(_currentTransistor);

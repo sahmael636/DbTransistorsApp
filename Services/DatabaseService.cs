@@ -22,6 +22,8 @@ namespace DbTransistorsApp.Services
             }
 
             _database = new SQLiteAsyncConnection(_dbPath);
+            _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS IDX_BYNAME_NAME ON ByName(Name)").Wait();
+
         }
 
         public async Task<bool> TestConnection()
@@ -71,17 +73,27 @@ namespace DbTransistorsApp.Services
 
         // ==================== ByName ====================
         public async Task<List<ByName>> GetAllByNameAsync()
-            => await _database.Table<ByName>().OrderBy(x => x.Name).ToListAsync();
+        {
+
+                return await _database.QueryAsync<ByName>(
+                "SELECT * FROM ByName ORDER BY Name LIMIT 1000");
+        }
 
         public async Task<List<ByName>> SearchByNameAsync(string searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
-                return await GetAllByNameAsync();
+            {
+                return await _database.QueryAsync<ByName>(
+                    "SELECT * FROM ByName ORDER BY Name LIMIT 1000");
+            }
 
-            return await _database.Table<ByName>()
-                .Where(x => x.Name.Contains(searchTerm))
-                .OrderBy(x => x.Name)
-                .ToListAsync();
+            return await _database.QueryAsync<ByName>(
+                @"SELECT *
+          FROM ByName
+          WHERE Name LIKE ? COLLATE NOCASE
+          ORDER BY Name
+          LIMIT 1000",
+                $"{searchTerm}%");
         }
 
         // ==================== BJT GERMANIUM ====================

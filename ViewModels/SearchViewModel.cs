@@ -25,6 +25,9 @@ namespace DbTransistorsApp.ViewModels
         [ObservableProperty]
         private int _totalMatches;
 
+        private CancellationTokenSource? _searchCancellation;
+        private const int SearchDelay = 300;
+
         public SearchViewModel(DatabaseService databaseService, NavigationService navigationService)
         {
             Title = "Buscar por Nombre";
@@ -37,8 +40,28 @@ namespace DbTransistorsApp.ViewModels
 
         partial void OnSearchTermChanged(string value)
         {
-            // Filtrar en tiempo real
-            PerformSearch(value);
+            _searchCancellation?.Cancel();
+
+            _searchCancellation = new CancellationTokenSource();
+
+            _ = SearchDelayedAsync(value, _searchCancellation.Token);
+        }
+
+        private async Task SearchDelayedAsync(string value, CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(SearchDelay, token);
+
+                if (token.IsCancellationRequested)
+                    return;
+
+                await PerformSearch(value);
+            }
+            catch (TaskCanceledException)
+            {
+                // El usuario siguió escribiendo
+            }
         }
 
         private async void LoadAllTransistors()
@@ -65,7 +88,7 @@ namespace DbTransistorsApp.ViewModels
             }
         }
 
-        private async void PerformSearch(string searchTerm)
+        private async Task PerformSearch(string searchTerm)
         {
             try
             {

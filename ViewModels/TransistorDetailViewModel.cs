@@ -5,6 +5,8 @@ using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
 using DbTransistorsApp.Views;
+using QuestPDF.Fluent;
+
 //using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -336,7 +338,7 @@ namespace DbTransistorsApp.ViewModels
                 Parameters.Add(param);
             }
         }
-
+        /*
         private string GetParameterDisplayName(string fieldName)
         {
             return fieldName switch
@@ -359,6 +361,32 @@ namespace DbTransistorsApp.ViewModels
                 "Tr" => "Tiempo de subida",
                 "Cd" => "Capacitancia de salida",
                 "Rds" => "Resistencia",
+                _ => fieldName
+            };
+        }
+        */
+        private string GetParameterDisplayName(string fieldName)
+        {
+            return fieldName switch
+            {
+                "Pc" or "Pd" => "Pot W",
+                "Vcb" => "VCB",
+                "Vce" => "VCE",
+                "Veb" => "VEB",
+                "Vds" => "VDS",
+                "Vgs" => "VGS",
+                "Vgsth" => "VGSTH",
+                "Vcesat" => "VCE Sat",
+                "Veg" => "VEG",
+                "Ic" or "Id" => "IC/ID",
+                "Tj" => "Tj",
+                "Ft" => "Ft",
+                "Cc" => "Cap",
+                "Hfe" => "Hfe",
+                "Qg" => "Qg",
+                "Tr" => "Tr",
+                "Cd" => "Cd",
+                "Rds" => "Rds",
                 _ => fieldName
             };
         }
@@ -488,6 +516,7 @@ namespace DbTransistorsApp.ViewModels
             }
         }
 
+        public Dictionary<string, string> OriginalParameters { get; } = new();
         private async Task LoadReplacementsAsync()
         {
             try
@@ -507,6 +536,15 @@ namespace DbTransistorsApp.ViewModels
                     {
                         parameters[prop.Name] = doubleValue;
                     }
+                }
+
+                OriginalParameters.Clear();
+
+                foreach (var prop in props)
+                {
+                    var value = prop.GetValue(_currentTransistor);
+
+                    OriginalParameters[prop.Name] = value?.ToString() ?? "";
                 }
 
                 // Añadir el ID para excluir el transistor actual
@@ -569,7 +607,7 @@ namespace DbTransistorsApp.ViewModels
                 IsBusy = false;
             }
         }
-
+        
         [RelayCommand]
         private async Task ExportToPdf()
         {
@@ -578,20 +616,45 @@ namespace DbTransistorsApp.ViewModels
                 IsBusy = true;
 
                 var replacements = Replacements.ToList();
+                //var replacements = Replacements.Cast<dynamic>().ToList();
                 if (!replacements.Any())
                 {
                     await _dialogService.ShowAlertAsync("Sin datos", "No hay reemplazos para exportar", "OK");
                     return;
                 }
 
-                // Generar PDF
+                // Nombre del archivo
                 string fileName = $"Reemplazos_{TransistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
-                string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
 
-                // Implementar generación de PDF
+                // Usar CacheDirectory
+                string folder = FileSystem.CacheDirectory;
+                //string folder = FileSystem.Current.AppDataDirectory;
+                Directory.CreateDirectory(folder);
+
+                string filePath = Path.Combine(folder, fileName);
+
+                // Eliminar si existe
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+
+                // Generar PDF
                 await GeneratePdfAsync(filePath, replacements);
 
-                // Compartir el archivo
+                // Dar tiempo al sistema de archivos de Android
+                await Task.Delay(300);
+
+                // Verificar que realmente existe
+                if (!File.Exists(filePath))
+                {
+                    throw new FileNotFoundException(
+                        $"El PDF no fue creado correctamente: {filePath}");
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                System.Diagnostics.Debug.WriteLine($"PDF generado: {filePath}");
+                System.Diagnostics.Debug.WriteLine($"Tamaño: {fileInfo.Length} bytes");
+
+                // Compartir
                 await Share.Default.RequestAsync(new ShareFileRequest
                 {
                     Title = "Compartir PDF de reemplazos",
@@ -600,13 +663,18 @@ namespace DbTransistorsApp.ViewModels
             }
             catch (Exception ex)
             {
-                await _dialogService.ShowAlertAsync("Error", $"Error al exportar a PDF: {ex.Message}", "OK");
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                await _dialogService.ShowAlertAsync(
+                    "Error",
+                    ex.Message,
+                    "OK");
             }
             finally
             {
                 IsBusy = false;
             }
         }
+
 
         [RelayCommand]
         private async Task ExportToExcel()
@@ -731,13 +799,143 @@ namespace DbTransistorsApp.ViewModels
                 }
             }
         }
-
+        /*
         private async Task GeneratePdfAsync(string filePath, List<object> replacements)
         {
             // Implementación con iTextSharp o QuestPDF
             // Crear un PDF con tabla de reemplazos
         }
+        */
+        private async Task GeneratePdfAsync(string filePath, List<object> replacements)
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
+            await Task.Run(() =>
+            {
+                QuestPDF.Fluent.Document.Create(document =>
+                {
+                    document.Page(page =>
+                    {
+                        page.Size(QuestPDF.Helpers.PageSizes.A4);
+                        page.Margin(15);
+
+                        page.Header().Column(column =>
+                        {
+                            column.Item().Text($"Reemplazos para {TransistorName}")
+                                .FontSize(18)
+                                .Bold();
+
+                            column.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+                                .FontSize(9);
+
+                            column.Item().PaddingBottom(10);
+
+                            column.Item().Text("Parámetros del transistor original")
+    .Bold()
+    .FontSize(12);
+
+                            column.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.ConstantColumn(180);
+                                    columns.RelativeColumn();
+                                });
+
+                                foreach (var p in OriginalParameters)
+                                {
+                                    table.Cell()
+                                        .Border(1)
+                                        .Padding(3)
+                                        .Text(p.Key)
+                                        .Bold();
+
+                                    table.Cell()
+                                        .Border(1)
+                                        .Padding(3)
+                                        .Text(p.Value);
+                                }
+                            });
+
+                            column.Item().PaddingBottom(10);
+                        });
+
+                        page.Content().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.ConstantColumn(140);
+
+                                foreach (var _ in ReplacementHeaders)
+                                    columns.RelativeColumn();
+                            });
+
+                            table.Header(header =>
+                            {
+                                header.Cell()
+                                    .Border(1)
+                                    .Background("#D9EAF7")
+                                    .Padding(4)
+                                    .Text("Nombre")
+                                    .Bold();
+
+                                foreach (string h in ReplacementHeaders)
+                                {
+                                    header.Cell()
+                                        .Border(1)
+                                        .Background("#D9EAF7")
+                                        .Padding(4)
+                                        .Text(h)
+                                        .FontSize(8)
+                                        .Bold();
+                                }
+                            });
+
+                            foreach (var item in replacements)
+                            {
+                                var type = item.GetType();
+
+                                var name = type.GetProperty("Name")?.GetValue(item)?.ToString() ?? "";
+
+                                var values = type.GetProperty("Values")?.GetValue(item) as IEnumerable<string>;
+
+                                table.Cell()
+                                    .Border(1)
+                                    .Padding(3)
+                                    .Text(name);
+
+                                if (values != null)
+                                {
+                                    int count = 0;
+
+                                    foreach (var value in values)
+                                    {
+                                        table.Cell()
+                                            .Border(1)
+                                            .Padding(3)
+                                            .AlignCenter()
+                                            .Text(value ?? "");
+
+                                        count++;
+                                    }
+
+                                    while (count < ReplacementHeaders.Count)
+                                    {
+                                        table.Cell()
+                                            .Border(1)
+                                            .Padding(3)
+                                            .Text("");
+
+                                        count++;
+                                    }
+                                }
+                            }
+                        });
+                    });
+                })
+                .GeneratePdf(filePath);
+            });
+        }
         private async Task GenerateExcelAsync(string filePath, List<object> replacements)
         {
             // Implementación con EPPlus o ClosedXML

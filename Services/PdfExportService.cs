@@ -1,9 +1,7 @@
-﻿// Services/PdfExportService.cs
-using iTextSharp.text;
-using iTextSharp.text.pdf;
-using System.Reflection;
-
-//using static Android.Icu.Util.LocaleData;
+﻿using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using Colors = QuestPDF.Helpers.Colors;
 
 namespace DbTransistorsApp.Services
 {
@@ -15,78 +13,96 @@ namespace DbTransistorsApp.Services
             List<object> replacements,
             Dictionary<string, string> columnHeaders)
         {
+            QuestPDF.Settings.License = LicenseType.Community;
+
             string fileName = $"Reemplazos_{transistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
-            string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+            string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);            
 
-            try
+            await Task.Run(() =>
             {
-                using var stream = File.Create(filePath);
-                var document = new Document(PageSize.A4);
-                PdfWriter.GetInstance(document, stream);
-                document.Open();
-
-                // Título
-                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18);
-                var title = new Paragraph($"Reemplazos para {transistorName}", titleFont);
-                title.Alignment = iTextSharp.text.Element.ALIGN_CENTER;
-                document.Add(title);
-
-                // Subtítulo
-                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA, 12);
-                var subtitle = new Paragraph($"Tipo: {transistorType}", subtitleFont);
-                subtitle.Alignment = iTextSharp.text.Element.ALIGN_CENTER;
-                document.Add(subtitle);
-
-                // Fecha
-                var dateFont = FontFactory.GetFont(FontFactory.HELVETICA, 10);
-                var date = new Paragraph($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}", dateFont);
-                date.Alignment = iTextSharp.text.Element.ALIGN_RIGHT;
-                document.Add(date);
-
-                document.Add(new Paragraph(" "));
-
-                // Tabla
-                var table = new PdfPTable(columnHeaders.Count);
-                table.WidthPercentage = 100;
-
-                // Encabezados
-                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12);
-                foreach (var header in columnHeaders.Values)
+                Document.Create(container =>
                 {
-                    var cell = new PdfPCell(new Phrase(header, headerFont));
-                    cell.BackgroundColor = new BaseColor(200, 200, 200);
-                    cell.HorizontalAlignment = iTextSharp.text.Element.ALIGN_CENTER;
-                    table.AddCell(cell);
-                }
-
-                // Datos
-                var dataFont = FontFactory.GetFont(FontFactory.HELVETICA, 10);
-                foreach (var item in replacements)
-                {
-                    foreach (var header in columnHeaders.Keys)
+                    container.Page(page =>
                     {
-                        var value = item.GetType().GetProperty(header)?.GetValue(item);
-                        var cell = new PdfPCell(new Phrase(value?.ToString() ?? "", dataFont));
-                        cell.HorizontalAlignment = iTextSharp.text.Element.ALIGN_CENTER;
-                        table.AddCell(cell);
-                    }
-                }
+                        page.Margin(20);
 
-                document.Add(table);
+                        page.Header()
+                            .Column(col =>
+                            {
+                                col.Item()
+                                    .Text($"Reemplazos para {transistorName}")
+                                    .FontSize(18)
+                                    .Bold()
+                                    .AlignCenter();
 
-                // Nota al pie
-                var noteFont = FontFactory.GetFont(FontFactory.HELVETICA_OBLIQUE, 8);
-                var note = new Paragraph("Nota: Los valores mostrados son los parámetros técnicos de los transistores.", noteFont);
-                note.Alignment = iTextSharp.text.Element.ALIGN_CENTER;
-                document.Add(note);
+                                col.Item()
+                                    .Text($"Tipo: {transistorType}")
+                                    .FontSize(12)
+                                    .AlignCenter();
 
-                document.Close();
-                return filePath;
-            }
-            catch
-            {
-                throw;
-            }
+                                col.Item()
+                                    .Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+                                    .FontSize(10)
+                                    .AlignRight();
+
+                                col.Item().PaddingBottom(10);
+                            });
+
+                        page.Content()
+                            .Table(table =>
+                            {
+                                // Una columna por cada encabezado
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    foreach (var _ in columnHeaders)
+                                        columns.RelativeColumn();
+                                });
+
+                                // Encabezados
+                                table.Header(header =>
+                                {
+                                    foreach (var title in columnHeaders.Values)
+                                    {
+                                        header.Cell()
+                                            .Background(Colors.Grey.Lighten2)
+                                            .Border(1)
+                                            .Padding(5)
+                                            .Text(title)
+                                            .Bold()
+                                            .AlignCenter();
+                                    }
+                                });
+
+                                // Datos
+                                foreach (var item in replacements)
+                                {
+                                    foreach (var propertyName in columnHeaders.Keys)
+                                    {
+                                        var value = item.GetType()
+                                            .GetProperty(propertyName)?
+                                            .GetValue(item)?
+                                            .ToString() ?? "";
+
+                                        table.Cell()
+                                            .Border(1)
+                                            .Padding(4)
+                                            .Text(value)
+                                            .FontSize(9)
+                                            .AlignCenter();
+                                    }
+                                }
+                            });
+
+                        page.Footer()
+                            .AlignCenter()
+                            .Text("Nota: Los valores mostrados son los parámetros técnicos de los transistores.")
+                            .FontSize(8);
+                    });
+                })
+                .GeneratePdf(filePath);
+            });
+
+            return filePath;
         }
     }
 }

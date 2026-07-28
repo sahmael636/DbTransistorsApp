@@ -5,7 +5,6 @@ using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
 using DbTransistorsApp.Views;
-using QuestPDF.Fluent;
 
 //using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
@@ -18,6 +17,7 @@ namespace DbTransistorsApp.ViewModels
         private readonly DatabaseService _databaseService;
         private readonly NavigationService _navigationService;
         private readonly DialogService _dialogService;
+        private readonly PdfExportService _pdfExportService;
         private ITransistor _originalTransistor;
         private ITransistor _currentTransistor;
         private string _tableType;
@@ -95,11 +95,16 @@ namespace DbTransistorsApp.ViewModels
         [ObservableProperty]
         private int _replacementCount;
 
-        public TransistorDetailViewModel(DatabaseService databaseService, NavigationService navigationService, DialogService dialogService)
+        public TransistorDetailViewModel(
+            DatabaseService databaseService,
+            NavigationService navigationService,
+            DialogService dialogService,
+            PdfExportService pdfExportService)
         {
             _databaseService = databaseService;
             _navigationService = navigationService;
             _dialogService = dialogService;
+            _pdfExportService = pdfExportService;
             try
             {
                 var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
@@ -352,7 +357,8 @@ namespace DbTransistorsApp.ViewModels
                 "Vgsth" => "Voltaje Umbral",
                 "Vcesat" => "VCE Saturación",
                 "Veg" => "VEG",
-                "Ic" or "Id" => "Corriente",
+                "Ic" => "Corriente de colector",
+                "CurrentId" => "Corriente de drenador",
                 "Tj" => "Temperatura de unión",
                 "Ft" => "Frecuencia de transición",
                 "Cc" => "Capacitancia",
@@ -378,7 +384,8 @@ namespace DbTransistorsApp.ViewModels
                 "Vgsth" => "VGSTH",
                 "Vcesat" => "VCE Sat",
                 "Veg" => "VEG",
-                "Ic" or "Id" => "IC/ID",
+                "Ic" => "IC",
+                "CurrentId" => "ID",
                 "Tj" => "Tj",
                 "Ft" => "Ft",
                 "Cc" => "Cap",
@@ -397,7 +404,7 @@ namespace DbTransistorsApp.ViewModels
             {
                 "Pc" or "Pd" => "W",
                 "Vcb" or "Vce" or "Veb" or "Vds" or "Vgs" or "Vgsth" or "Vcesat" or "Veg" => "V",
-                "Ic" or "Id" => "A",
+                "Ic" or "CurrentId" => "A",
                 "Tj" => "°C",
                 "Ft" => "MHz",
                 "Cc" or "Cd" => "pF",
@@ -607,7 +614,7 @@ namespace DbTransistorsApp.ViewModels
                 IsBusy = false;
             }
         }
-        
+
         [RelayCommand]
         private async Task ExportToPdf()
         {
@@ -637,8 +644,22 @@ namespace DbTransistorsApp.ViewModels
                 if (File.Exists(filePath))
                     File.Delete(filePath);
 
-                // Generar PDF
-                await GeneratePdfAsync(filePath, replacements);
+                // Convertir los datos de la vista a un modelo independiente para el PDF.
+                var pdfRows = replacements
+                    .OfType<ReplacementRow>()
+                    .Select(row => new PdfReplacementRow(
+                        row.Name,
+                        row.Values.Take(ReplacementHeaders.Count).ToList()))
+                    .ToList();
+
+                await _pdfExportService.ExportReplacementsToPdfAsync(
+                    filePath,
+                    TransistorName,
+                    TransistorType,
+                    TransistorStructure,
+                    new Dictionary<string, string>(OriginalParameters),
+                    ReplacementHeaders.ToList(),
+                    pdfRows);
 
                 // Dar tiempo al sistema de archivos de Android
                 await Task.Delay(300);
@@ -798,143 +819,6 @@ namespace DbTransistorsApp.ViewModels
                     IsBusy = false;
                 }
             }
-        }
-        /*
-        private async Task GeneratePdfAsync(string filePath, List<object> replacements)
-        {
-            // Implementación con iTextSharp o QuestPDF
-            // Crear un PDF con tabla de reemplazos
-        }
-        */
-        private async Task GeneratePdfAsync(string filePath, List<object> replacements)
-        {
-            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-
-            await Task.Run(() =>
-            {
-                QuestPDF.Fluent.Document.Create(document =>
-                {
-                    document.Page(page =>
-                    {
-                        page.Size(QuestPDF.Helpers.PageSizes.A4);
-                        page.Margin(15);
-
-                        page.Header().Column(column =>
-                        {
-                            column.Item().Text($"Reemplazos para {TransistorName}")
-                                .FontSize(18)
-                                .Bold();
-
-                            column.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
-                                .FontSize(9);
-
-                            column.Item().PaddingBottom(10);
-
-                            column.Item().Text("Parámetros del transistor original")
-    .Bold()
-    .FontSize(12);
-
-                            column.Item().Table(table =>
-                            {
-                                table.ColumnsDefinition(columns =>
-                                {
-                                    columns.ConstantColumn(180);
-                                    columns.RelativeColumn();
-                                });
-
-                                foreach (var p in OriginalParameters)
-                                {
-                                    table.Cell()
-                                        .Border(1)
-                                        .Padding(3)
-                                        .Text(p.Key)
-                                        .Bold();
-
-                                    table.Cell()
-                                        .Border(1)
-                                        .Padding(3)
-                                        .Text(p.Value);
-                                }
-                            });
-
-                            column.Item().PaddingBottom(10);
-                        });
-
-                        page.Content().Table(table =>
-                        {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.ConstantColumn(140);
-
-                                foreach (var _ in ReplacementHeaders)
-                                    columns.RelativeColumn();
-                            });
-
-                            table.Header(header =>
-                            {
-                                header.Cell()
-                                    .Border(1)
-                                    .Background("#D9EAF7")
-                                    .Padding(4)
-                                    .Text("Nombre")
-                                    .Bold();
-
-                                foreach (string h in ReplacementHeaders)
-                                {
-                                    header.Cell()
-                                        .Border(1)
-                                        .Background("#D9EAF7")
-                                        .Padding(4)
-                                        .Text(h)
-                                        .FontSize(8)
-                                        .Bold();
-                                }
-                            });
-
-                            foreach (var item in replacements)
-                            {
-                                var type = item.GetType();
-
-                                var name = type.GetProperty("Name")?.GetValue(item)?.ToString() ?? "";
-
-                                var values = type.GetProperty("Values")?.GetValue(item) as IEnumerable<string>;
-
-                                table.Cell()
-                                    .Border(1)
-                                    .Padding(3)
-                                    .Text(name);
-
-                                if (values != null)
-                                {
-                                    int count = 0;
-
-                                    foreach (var value in values)
-                                    {
-                                        table.Cell()
-                                            .Border(1)
-                                            .Padding(3)
-                                            .AlignCenter()
-                                            .Text(value ?? "");
-
-                                        count++;
-                                    }
-
-                                    while (count < ReplacementHeaders.Count)
-                                    {
-                                        table.Cell()
-                                            .Border(1)
-                                            .Padding(3)
-                                            .Text("");
-
-                                        count++;
-                                    }
-                                }
-                            }
-                        });
-                    });
-                })
-                .GeneratePdf(filePath);
-            });
         }
         private async Task GenerateExcelAsync(string filePath, List<object> replacements)
         {

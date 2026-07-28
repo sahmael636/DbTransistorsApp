@@ -55,6 +55,21 @@ namespace DbTransistorsApp.Services
         public async Task<int> DeleteEstructuraAsync(int id)
             => await _database.DeleteAsync<Estructura>(id);
 
+        public async Task<List<Estructura>> GetAvailableStructuresForTableAsync(string tableName)
+        {
+            // GetModelType valida el nombre antes de interpolarlo en la consulta.
+            _ = GetModelType(tableName);
+            string safeTableName = tableName.ToLowerInvariant();
+
+            string query = $@"
+                SELECT DISTINCT e.id, e.nombre
+                FROM estructuras e
+                INNER JOIN {safeTableName} t ON t.struct_id = e.id
+                ORDER BY e.id";
+
+            return await _database.QueryAsync<Estructura>(query);
+        }
+
         // ==================== ENCAPSULADOS ====================
         public async Task<List<Encapsulado>> GetAllEncapsuladosAsync()
             => await _database.Table<Encapsulado>().OrderBy(x => x.Nombre).ToListAsync();
@@ -75,8 +90,8 @@ namespace DbTransistorsApp.Services
         public async Task<List<ByName>> GetAllByNameAsync()
         {
 
-                return await _database.QueryAsync<ByName>(
-                "SELECT * FROM ByName ORDER BY Name LIMIT 1000");
+            return await _database.QueryAsync<ByName>(
+            "SELECT * FROM ByName ORDER BY Name LIMIT 1000");
         }
 
         public async Task<List<ByName>> SearchByNameAsync(string searchTerm)
@@ -349,7 +364,7 @@ namespace DbTransistorsApp.Services
                     SELECT t.* FROM {tableName} t
                     INNER JOIN {tableName}_caps tc ON t._id = tc.{tableName}_id
                     WHERE tc.caps_id IN ({idsPlaceholders})
-                    { (string.IsNullOrEmpty(whereClause) ? "" : "AND " + whereClause.Substring(6)) }
+                    {(string.IsNullOrEmpty(whereClause) ? "" : "AND " + whereClause.Substring(6))}
                     ORDER BY t.name
                 ";
 
@@ -370,26 +385,39 @@ namespace DbTransistorsApp.Services
         // ==================== FILTRADO ====================
         public async Task<List<object>> GetFilteredTransistorsAsync(
             string tableName,
-            Dictionary<string, object> numericFilters,
-            Dictionary<string, string> textFilters)
+            IReadOnlyDictionary<string, double> minimumFilters,
+            IReadOnlyDictionary<string, double> maximumFilters,
+            int structId)
         {
+            var modelType = GetModelType(tableName);
             var conditions = new List<string>();
             var parameters = new List<object>();
 
-            foreach (var filter in numericFilters)
+            // La lista nunca mezcla estructuras.
+            if (structId <= 0)
             {
-                conditions.Add(filter.Key);
+                return new List<object>();
+            }
+
+            conditions.Add("struct_id = ?");
+            parameters.Add(structId);
+
+            foreach (var filter in minimumFilters)
+            {
+                string columnName = GetMappedColumnName(modelType, filter.Key);
+                conditions.Add($"{columnName} >= ?");
                 parameters.Add(filter.Value);
             }
 
-            foreach (var filter in textFilters)
+            foreach (var filter in maximumFilters)
             {
-                conditions.Add($"{filter.Key} LIKE ?");
-                parameters.Add($"%{filter.Value}%");
+                string columnName = GetMappedColumnName(modelType, filter.Key);
+                conditions.Add($"{columnName} <= ?");
+                parameters.Add(filter.Value);
             }
 
-            string whereClause = conditions.Any() ? $"WHERE {string.Join(" AND ", conditions)}" : "";
-            string query = $"SELECT * FROM {tableName} {whereClause} ORDER BY name";
+            string whereClause = $"WHERE {string.Join(" AND ", conditions)}";
+            string query = $"SELECT * FROM {tableName.ToLowerInvariant()} {whereClause} ORDER BY name";
 
             return await ExecuteQueryAsync(tableName, query, parameters.ToArray());
         }
@@ -421,65 +449,65 @@ namespace DbTransistorsApp.Services
             switch (type?.ToLower())
             {
                 case "bjtge":
-                {
-                    var res = await GetBjtGeByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtge id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetBjtGeByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtge id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "bjtsi":
-                {
-                    var res = await GetBjtSiByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsi id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetBjtSiByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsi id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "bjtprebias":
-                {
-                    var res = await GetBjtPrebiasByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebias id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetBjtPrebiasByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebias id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "bjtprebiasdual":
-                {
-                    var res = await GetBjtPrebiasDualByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebiasdual id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetBjtPrebiasDualByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtprebiasdual id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "bjtsidual":
-                {
-                    var res = await GetBjtSiDualByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsidual id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetBjtSiDualByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for bjtsidual id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "jfet":
-                {
-                    var res = await GetJfetByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for jfet id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetJfetByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for jfet id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "mosfet":
-                {
-                    var res = await GetMosfetByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfet id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetMosfetByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfet id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "mosfetdual":
-                {
-                    var res = await GetMosfetDualByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfetdual id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetMosfetDualByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for mosfetdual id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "igbt":
-                {
-                    var res = await GetIgbtByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbt id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetIgbtByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbt id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 case "igbtdual":
-                {
-                    var res = await GetIgbtDualByIdAsync(id);
-                    Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbtdual id={id}: {(res != null ? "found" : "null")}");
-                    return res;
-                }
+                    {
+                        var res = await GetIgbtDualByIdAsync(id);
+                        Debug.WriteLine($"GetTransistorByTypeAndIdAsync result for igbtdual id={id}: {(res != null ? "found" : "null")}");
+                        return res;
+                    }
                 default:
                     Debug.WriteLine($"GetTransistorByTypeAndIdAsync: tipo no válido {type}");
                     throw new ArgumentException($"Tipo no válido: {type}");
@@ -558,6 +586,29 @@ namespace DbTransistorsApp.Services
                 "igbtdual" => typeof(IgbtDual),
                 _ => throw new ArgumentException($"Tabla no válida: {tableName}")
             };
+        }
+
+        private static string GetMappedColumnName(Type modelType, string propertyName)
+        {
+            var property = modelType.GetProperty(propertyName)
+                ?? throw new ArgumentException($"Propiedad de filtro no válida: {propertyName}");
+
+            var columnAttribute = property.GetCustomAttributes(false)
+                .FirstOrDefault(attribute => attribute.GetType().Name == "ColumnAttribute");
+
+            if (columnAttribute != null)
+            {
+                var nameProperty = columnAttribute.GetType().GetProperty("Name")
+                    ?? columnAttribute.GetType().GetProperty("Column");
+
+                var mappedName = nameProperty?.GetValue(columnAttribute)?.ToString();
+                if (!string.IsNullOrWhiteSpace(mappedName))
+                {
+                    return mappedName;
+                }
+            }
+
+            return property.Name.ToLowerInvariant();
         }
 
         private async Task<List<object>> ExecuteQueryAsync(string tableName, string query, params object[] args)

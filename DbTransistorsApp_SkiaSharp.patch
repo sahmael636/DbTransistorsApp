@@ -1,0 +1,2833 @@
+diff -ruN dbapp_base/DbTransistorsApp/DbTransistorsApp.csproj dbapp_work/DbTransistorsApp/DbTransistorsApp.csproj
+--- dbapp_base/DbTransistorsApp/DbTransistorsApp.csproj	2026-07-24 03:29:28.000000000 +0000
++++ dbapp_work/DbTransistorsApp/DbTransistorsApp.csproj	2026-07-27 23:48:11.869664436 +0000
+@@ -1,103 +1,103 @@
+-﻿<Project Sdk="Microsoft.NET.Sdk">
+-
+-	<PropertyGroup>
+-		<TargetFrameworks>net10.0-android</TargetFrameworks>
+-		<TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+-
+-		<!-- Note for MacCatalyst:
+-		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
+-		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
+-		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
+-		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
+-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+-
+-		<OutputType>Exe</OutputType>
+-		<RootNamespace>DbTransistorsApp</RootNamespace>
+-		<UseMaui>true</UseMaui>
+-		<SingleProject>true</SingleProject>
+-		<ImplicitUsings>enable</ImplicitUsings>
+-		<Nullable>enable</Nullable>
+-
+-		<!-- Enable XAML source generation for faster build times and improved performance.
+-		     This generates C# code from XAML at compile time instead of runtime inflation.
+-		     To disable, remove this line.
+-		     For individual files, you can override by setting Inflator metadata:
+-		       <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
+-		       <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
+-		<MauiXamlInflator>SourceGen</MauiXamlInflator>
+-
+-		<!-- Display name -->
+-		<ApplicationTitle>DbTransistorsApp</ApplicationTitle>
+-
+-		<!-- App Identifier -->
+-		<ApplicationId>com.companyname.dbtransistorsapp</ApplicationId>
+-
+-		<!-- Versions -->
+-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+-		<ApplicationVersion>1</ApplicationVersion>
+-
+-		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
+-		<WindowsPackageType>None</WindowsPackageType>
+-
+-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+-		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+-	</PropertyGroup>
+-
+-	<ItemGroup>
+-		<!-- App Icon -->
+-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+-
+-		<!-- Splash Screen -->
+-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+-
+-		<!-- Images -->
+-		<MauiImage Include="Resources\Images\*" />
+-		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+-		
+-		<!-- Custom Fonts -->
+-		<MauiFont Include="Resources\Fonts\*" />
+-
+-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+-		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+-	</ItemGroup>
+-
+-	<ItemGroup>
+-	  <MauiCss Remove="Services\DatabaseServiceExtensions.css" />
+-	</ItemGroup>
+-
+-	<ItemGroup>
+-	  <None Remove="dbtransistors.db" />
+-	</ItemGroup>
+-
+-	<ItemGroup>
+-	  <MauiAsset Include="dbtransistors.db">
+-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+-	  </MauiAsset>
+-	</ItemGroup>
+-
+-	<ItemGroup>
+-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+-		<PackageReference Include="CommunityToolkit.Maui" Version="14.2.2" />
+-		<PackageReference Include="EPPlus" Version="8.6.2" />
+-		<PackageReference Include="ExcelDataReader" Version="3.9.0" />
+-		<PackageReference Include="ExcelDataReader.DataSet" Version="3.9.0" />
+-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
+-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
+-		<PackageReference Include="QuestPDF" Version="2026.7.1" />
+-		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
+-		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+-	</ItemGroup>
+-
+-	<ItemGroup>
+-	  <MauiXaml Update="Views\Controls\FixedColumnsHeader.xaml">
+-	    <Generator>MSBuild:Compile</Generator>
+-	  </MauiXaml>
+-	</ItemGroup>
+-
+-	<!-- XAML files use the default SourceGen inflator; explicit MauiXaml Update entries removed to avoid duplicate generated files -->
+-
+-</Project>
++﻿<Project Sdk="Microsoft.NET.Sdk">
++
++	<PropertyGroup>
++		<TargetFrameworks>net10.0-android</TargetFrameworks>
++		<TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
++		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
++
++		<!-- Note for MacCatalyst:
++		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
++		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
++		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
++		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
++		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
++
++		<OutputType>Exe</OutputType>
++		<RootNamespace>DbTransistorsApp</RootNamespace>
++		<UseMaui>true</UseMaui>
++		<SingleProject>true</SingleProject>
++		<ImplicitUsings>enable</ImplicitUsings>
++		<Nullable>enable</Nullable>
++
++		<!-- Enable XAML source generation for faster build times and improved performance.
++		     This generates C# code from XAML at compile time instead of runtime inflation.
++		     To disable, remove this line.
++		     For individual files, you can override by setting Inflator metadata:
++		       <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
++		       <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
++		<MauiXamlInflator>SourceGen</MauiXamlInflator>
++
++		<!-- Display name -->
++		<ApplicationTitle>DbTransistorsApp</ApplicationTitle>
++
++		<!-- App Identifier -->
++		<ApplicationId>com.companyname.dbtransistorsapp</ApplicationId>
++
++		<!-- Versions -->
++		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
++		<ApplicationVersion>1</ApplicationVersion>
++
++		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
++		<WindowsPackageType>None</WindowsPackageType>
++
++		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
++		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
++		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
++		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
++		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
++	</PropertyGroup>
++
++	<ItemGroup>
++		<!-- App Icon -->
++		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
++
++		<!-- Splash Screen -->
++		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
++
++		<!-- Images -->
++		<MauiImage Include="Resources\Images\*" />
++		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
++		
++		<!-- Custom Fonts -->
++		<MauiFont Include="Resources\Fonts\*" />
++
++		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
++		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
++	</ItemGroup>
++
++	<ItemGroup>
++	  <MauiCss Remove="Services\DatabaseServiceExtensions.css" />
++	</ItemGroup>
++
++	<ItemGroup>
++	  <None Remove="dbtransistors.db" />
++	</ItemGroup>
++
++	<ItemGroup>
++	  <MauiAsset Include="dbtransistors.db">
++	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
++	  </MauiAsset>
++	</ItemGroup>
++
++	<ItemGroup>
++		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
++		<PackageReference Include="CommunityToolkit.Maui" Version="14.2.2" />
++		<PackageReference Include="EPPlus" Version="8.6.2" />
++		<PackageReference Include="ExcelDataReader" Version="3.9.0" />
++		<PackageReference Include="ExcelDataReader.DataSet" Version="3.9.0" />
++		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
++		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
++		<PackageReference Include="SkiaSharp" Version="4.150.1" />
++		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
++		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
++	</ItemGroup>
++
++	<ItemGroup>
++	  <MauiXaml Update="Views\Controls\FixedColumnsHeader.xaml">
++	    <Generator>MSBuild:Compile</Generator>
++	  </MauiXaml>
++	</ItemGroup>
++
++	<!-- XAML files use the default SourceGen inflator; explicit MauiXaml Update entries removed to avoid duplicate generated files -->
++
++</Project>
+diff -ruN dbapp_base/DbTransistorsApp/Services/PdfExportService.cs dbapp_work/DbTransistorsApp/Services/PdfExportService.cs
+--- dbapp_base/DbTransistorsApp/Services/PdfExportService.cs	2026-07-25 01:23:11.000000000 +0000
++++ dbapp_work/DbTransistorsApp/Services/PdfExportService.cs	2026-07-27 23:49:10.677662572 +0000
+@@ -1,108 +1,718 @@
+-﻿using QuestPDF.Fluent;
+-using QuestPDF.Helpers;
+-using QuestPDF.Infrastructure;
+-using Colors = QuestPDF.Helpers.Colors;
+-
+-namespace DbTransistorsApp.Services
+-{
+-    public class PdfExportService
+-    {
+-        public async Task<string> ExportReplacementsToPdfAsync(
+-            string transistorName,
+-            string transistorType,
+-            List<object> replacements,
+-            Dictionary<string, string> columnHeaders)
+-        {
+-            QuestPDF.Settings.License = LicenseType.Community;
+-
+-            string fileName = $"Reemplazos_{transistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+-            string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);            
+-
+-            await Task.Run(() =>
+-            {
+-                Document.Create(container =>
+-                {
+-                    container.Page(page =>
+-                    {
+-                        page.Margin(20);
+-
+-                        page.Header()
+-                            .Column(col =>
+-                            {
+-                                col.Item()
+-                                    .Text($"Reemplazos para {transistorName}")
+-                                    .FontSize(18)
+-                                    .Bold()
+-                                    .AlignCenter();
+-
+-                                col.Item()
+-                                    .Text($"Tipo: {transistorType}")
+-                                    .FontSize(12)
+-                                    .AlignCenter();
+-
+-                                col.Item()
+-                                    .Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+-                                    .FontSize(10)
+-                                    .AlignRight();
+-
+-                                col.Item().PaddingBottom(10);
+-                            });
+-
+-                        page.Content()
+-                            .Table(table =>
+-                            {
+-                                // Una columna por cada encabezado
+-                                table.ColumnsDefinition(columns =>
+-                                {
+-                                    foreach (var _ in columnHeaders)
+-                                        columns.RelativeColumn();
+-                                });
+-
+-                                // Encabezados
+-                                table.Header(header =>
+-                                {
+-                                    foreach (var title in columnHeaders.Values)
+-                                    {
+-                                        header.Cell()
+-                                            .Background(Colors.Grey.Lighten2)
+-                                            .Border(1)
+-                                            .Padding(5)
+-                                            .Text(title)
+-                                            .Bold()
+-                                            .AlignCenter();
+-                                    }
+-                                });
+-
+-                                // Datos
+-                                foreach (var item in replacements)
+-                                {
+-                                    foreach (var propertyName in columnHeaders.Keys)
+-                                    {
+-                                        var value = item.GetType()
+-                                            .GetProperty(propertyName)?
+-                                            .GetValue(item)?
+-                                            .ToString() ?? "";
+-
+-                                        table.Cell()
+-                                            .Border(1)
+-                                            .Padding(4)
+-                                            .Text(value)
+-                                            .FontSize(9)
+-                                            .AlignCenter();
+-                                    }
+-                                }
+-                            });
+-
+-                        page.Footer()
+-                            .AlignCenter()
+-                            .Text("Nota: Los valores mostrados son los parámetros técnicos de los transistores.")
+-                            .FontSize(8);
+-                    });
+-                })
+-                .GeneratePdf(filePath);
+-            });
+-
+-            return filePath;
+-        }
+-    }
+-}
+\ No newline at end of file
++using SkiaSharp;
++
++namespace DbTransistorsApp.Services
++{
++    /// <summary>
++    /// Genera reportes PDF mediante SkiaSharp. SkiaSharp funciona en Android,
++    /// Windows y las demás plataformas objetivo de .NET MAUI, sin depender de
++    /// APIs gráficas exclusivas de Windows.
++    /// </summary>
++    public sealed class PdfExportService
++    {
++        private const float PageWidth = 842f;   // A4 horizontal, en puntos
++        private const float PageHeight = 595f;
++        private const float Margin = 24f;
++        private const float FooterHeight = 24f;
++        private const float ContentBottom = PageHeight - Margin - FooterHeight;
++
++        private static readonly SKColor HeaderBackground = new(217, 234, 247);
++        private static readonly SKColor AlternateRowBackground = new(247, 249, 251);
++        private static readonly SKColor BorderColor = new(90, 90, 90);
++        private static readonly SKColor SecondaryTextColor = new(75, 75, 75);
++
++        public Task<string> ExportReplacementsToPdfAsync(
++            string filePath,
++            string transistorName,
++            string transistorType,
++            string transistorStructure,
++            IReadOnlyDictionary<string, string> originalParameters,
++            IReadOnlyList<string> replacementHeaders,
++            IReadOnlyList<PdfReplacementRow> replacements)
++        {
++            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
++            ArgumentNullException.ThrowIfNull(originalParameters);
++            ArgumentNullException.ThrowIfNull(replacementHeaders);
++            ArgumentNullException.ThrowIfNull(replacements);
++
++            string? directory = Path.GetDirectoryName(filePath);
++            if (!string.IsNullOrWhiteSpace(directory))
++                Directory.CreateDirectory(directory);
++
++            return Task.Run(() =>
++            {
++                GeneratePdf(
++                    filePath,
++                    transistorName,
++                    transistorType,
++                    transistorStructure,
++                    originalParameters,
++                    replacementHeaders,
++                    replacements);
++
++                return filePath;
++            });
++        }
++
++        private static void GeneratePdf(
++            string filePath,
++            string transistorName,
++            string transistorType,
++            string transistorStructure,
++            IReadOnlyDictionary<string, string> originalParameters,
++            IReadOnlyList<string> replacementHeaders,
++            IReadOnlyList<PdfReplacementRow> replacements)
++        {
++            using var output = new FileStream(
++                filePath,
++                FileMode.Create,
++                FileAccess.Write,
++                FileShare.None);
++
++            using SKDocument document = SKDocument.CreatePdf(output)
++                ?? throw new InvalidOperationException("SkiaSharp no pudo inicializar el documento PDF.");
++
++            using SKTypeface regularTypeface =
++                SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Normal)
++                ?? throw new InvalidOperationException("No se pudo cargar una tipografía para el PDF.");
++
++            using SKTypeface boldTypeface =
++                SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Bold)
++                ?? throw new InvalidOperationException("No se pudo cargar la tipografía en negrita para el PDF.");
++
++            using var titleFont = new SKFont(boldTypeface, 18f);
++            using var subtitleFont = new SKFont(regularTypeface, 9f);
++            using var sectionFont = new SKFont(boldTypeface, 11f);
++            using var bodyFont = new SKFont(regularTypeface, 8.5f);
++            using var bodyBoldFont = new SKFont(boldTypeface, 8.5f);
++            using var tableFont = new SKFont(regularTypeface, 7.5f);
++            using var tableBoldFont = new SKFont(boldTypeface, 7.5f);
++            using var footerFont = new SKFont(regularTypeface, 7f);
++
++            using var textPaint = new SKPaint
++            {
++                Color = SKColors.Black,
++                IsAntialias = true,
++                Style = SKPaintStyle.Fill
++            };
++
++            using var secondaryTextPaint = new SKPaint
++            {
++                Color = SecondaryTextColor,
++                IsAntialias = true,
++                Style = SKPaintStyle.Fill
++            };
++
++            using var borderPaint = new SKPaint
++            {
++                Color = BorderColor,
++                IsAntialias = true,
++                Style = SKPaintStyle.Stroke,
++                StrokeWidth = 0.7f
++            };
++
++            using var headerFillPaint = new SKPaint
++            {
++                Color = HeaderBackground,
++                Style = SKPaintStyle.Fill
++            };
++
++            using var alternateFillPaint = new SKPaint
++            {
++                Color = AlternateRowBackground,
++                Style = SKPaintStyle.Fill
++            };
++
++            int pageNumber = 0;
++            PageState page = StartPage(document, ++pageNumber);
++
++            DrawReportHeader(
++                page,
++                transistorName,
++                transistorType,
++                transistorStructure,
++                titleFont,
++                subtitleFont,
++                textPaint,
++                secondaryTextPaint);
++
++            DrawOriginalParameters(
++                document,
++                ref page,
++                ref pageNumber,
++                transistorName,
++                originalParameters,
++                sectionFont,
++                bodyFont,
++                bodyBoldFont,
++                footerFont,
++                textPaint,
++                secondaryTextPaint,
++                borderPaint,
++                headerFillPaint);
++
++            DrawReplacementTable(
++                document,
++                ref page,
++                ref pageNumber,
++                transistorName,
++                replacementHeaders,
++                replacements,
++                sectionFont,
++                tableFont,
++                tableBoldFont,
++                footerFont,
++                textPaint,
++                secondaryTextPaint,
++                borderPaint,
++                headerFillPaint,
++                alternateFillPaint);
++
++            FinishPage(document, page, footerFont, secondaryTextPaint);
++            document.Close();
++        }
++
++        private static void DrawReportHeader(
++            PageState page,
++            string transistorName,
++            string transistorType,
++            string transistorStructure,
++            SKFont titleFont,
++            SKFont subtitleFont,
++            SKPaint textPaint,
++            SKPaint secondaryTextPaint)
++        {
++            string safeName = string.IsNullOrWhiteSpace(transistorName)
++                ? "Transistor"
++                : transistorName;
++
++            DrawText(
++                page.Canvas,
++                $"Reemplazos para {safeName}",
++                PageWidth / 2f,
++                page.Y + 18f,
++                SKTextAlign.Center,
++                titleFont,
++                textPaint);
++
++            page.Y += 32f;
++
++            var details = new List<string>();
++            if (!string.IsNullOrWhiteSpace(transistorType))
++                details.Add($"Tipo: {transistorType}");
++            if (!string.IsNullOrWhiteSpace(transistorStructure))
++                details.Add($"Estructura: {transistorStructure}");
++
++            if (details.Count > 0)
++            {
++                DrawText(
++                    page.Canvas,
++                    string.Join("   |   ", details),
++                    PageWidth / 2f,
++                    page.Y,
++                    SKTextAlign.Center,
++                    subtitleFont,
++                    secondaryTextPaint);
++                page.Y += 16f;
++            }
++
++            DrawText(
++                page.Canvas,
++                $"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}",
++                PageWidth - Margin,
++                page.Y,
++                SKTextAlign.Right,
++                subtitleFont,
++                secondaryTextPaint);
++
++            page.Y += 20f;
++        }
++
++        private static void DrawOriginalParameters(
++            SKDocument document,
++            ref PageState page,
++            ref int pageNumber,
++            string transistorName,
++            IReadOnlyDictionary<string, string> originalParameters,
++            SKFont sectionFont,
++            SKFont bodyFont,
++            SKFont bodyBoldFont,
++            SKFont footerFont,
++            SKPaint textPaint,
++            SKPaint secondaryTextPaint,
++            SKPaint borderPaint,
++            SKPaint headerFillPaint)
++        {
++            const float sectionSpacing = 18f;
++            const float rowHeight = 20f;
++            const float keyWidth = 220f;
++            float tableWidth = PageWidth - (Margin * 2f);
++
++            EnsureSpace(
++                document,
++                ref page,
++                ref pageNumber,
++                rowHeight * 2f + sectionSpacing,
++                transistorName,
++                footerFont,
++                secondaryTextPaint,
++                sectionFont,
++                textPaint);
++
++            DrawText(
++                page.Canvas,
++                "Parámetros del transistor original",
++                Margin,
++                page.Y + 11f,
++                SKTextAlign.Left,
++                sectionFont,
++                textPaint);
++            page.Y += sectionSpacing;
++
++            DrawCell(
++                page.Canvas,
++                new SKRect(Margin, page.Y, Margin + keyWidth, page.Y + rowHeight),
++                "Parámetro",
++                bodyBoldFont,
++                textPaint,
++                borderPaint,
++                headerFillPaint,
++                SKTextAlign.Left);
++
++            DrawCell(
++                page.Canvas,
++                new SKRect(Margin + keyWidth, page.Y, Margin + tableWidth, page.Y + rowHeight),
++                "Valor",
++                bodyBoldFont,
++                textPaint,
++                borderPaint,
++                headerFillPaint,
++                SKTextAlign.Left);
++
++            page.Y += rowHeight;
++
++            foreach (KeyValuePair<string, string> parameter in originalParameters)
++            {
++                if (page.Y + rowHeight > ContentBottom)
++                {
++                    FinishPage(document, page, footerFont, secondaryTextPaint);
++                    page = StartPage(document, ++pageNumber);
++                    DrawContinuationTitle(
++                        page,
++                        transistorName,
++                        "Parámetros del transistor original (continuación)",
++                        sectionFont,
++                        textPaint);
++
++                    DrawCell(
++                        page.Canvas,
++                        new SKRect(Margin, page.Y, Margin + keyWidth, page.Y + rowHeight),
++                        "Parámetro",
++                        bodyBoldFont,
++                        textPaint,
++                        borderPaint,
++                        headerFillPaint,
++                        SKTextAlign.Left);
++
++                    DrawCell(
++                        page.Canvas,
++                        new SKRect(Margin + keyWidth, page.Y, Margin + tableWidth, page.Y + rowHeight),
++                        "Valor",
++                        bodyBoldFont,
++                        textPaint,
++                        borderPaint,
++                        headerFillPaint,
++                        SKTextAlign.Left);
++
++                    page.Y += rowHeight;
++                }
++
++                DrawCell(
++                    page.Canvas,
++                    new SKRect(Margin, page.Y, Margin + keyWidth, page.Y + rowHeight),
++                    parameter.Key,
++                    bodyBoldFont,
++                    textPaint,
++                    borderPaint,
++                    null,
++                    SKTextAlign.Left);
++
++                DrawCell(
++                    page.Canvas,
++                    new SKRect(Margin + keyWidth, page.Y, Margin + tableWidth, page.Y + rowHeight),
++                    parameter.Value,
++                    bodyFont,
++                    textPaint,
++                    borderPaint,
++                    null,
++                    SKTextAlign.Left);
++
++                page.Y += rowHeight;
++            }
++
++            page.Y += 14f;
++        }
++
++        private static void DrawReplacementTable(
++            SKDocument document,
++            ref PageState page,
++            ref int pageNumber,
++            string transistorName,
++            IReadOnlyList<string> replacementHeaders,
++            IReadOnlyList<PdfReplacementRow> replacements,
++            SKFont sectionFont,
++            SKFont tableFont,
++            SKFont tableBoldFont,
++            SKFont footerFont,
++            SKPaint textPaint,
++            SKPaint secondaryTextPaint,
++            SKPaint borderPaint,
++            SKPaint headerFillPaint,
++            SKPaint alternateFillPaint)
++        {
++            const float sectionHeight = 22f;
++            const float headerHeight = 28f;
++            const float rowHeight = 20f;
++            float tableWidth = PageWidth - (Margin * 2f);
++            int parameterCount = Math.Max(1, replacementHeaders.Count);
++            float nameWidth = Math.Clamp(tableWidth * 0.18f, 110f, 145f);
++            float valueWidth = (tableWidth - nameWidth) / parameterCount;
++
++            EnsureSpace(
++                document,
++                ref page,
++                ref pageNumber,
++                sectionHeight + headerHeight + rowHeight,
++                transistorName,
++                footerFont,
++                secondaryTextPaint,
++                sectionFont,
++                textPaint);
++
++            DrawText(
++                page.Canvas,
++                $"Transistores de reemplazo ({replacements.Count})",
++                Margin,
++                page.Y + 12f,
++                SKTextAlign.Left,
++                sectionFont,
++                textPaint);
++            page.Y += sectionHeight;
++
++            DrawReplacementHeader(
++                page,
++                replacementHeaders,
++                nameWidth,
++                valueWidth,
++                headerHeight,
++                tableBoldFont,
++                textPaint,
++                borderPaint,
++                headerFillPaint);
++
++            for (int rowIndex = 0; rowIndex < replacements.Count; rowIndex++)
++            {
++                if (page.Y + rowHeight > ContentBottom)
++                {
++                    FinishPage(document, page, footerFont, secondaryTextPaint);
++                    page = StartPage(document, ++pageNumber);
++                    DrawContinuationTitle(
++                        page,
++                        transistorName,
++                        "Transistores de reemplazo (continuación)",
++                        sectionFont,
++                        textPaint);
++
++                    DrawReplacementHeader(
++                        page,
++                        replacementHeaders,
++                        nameWidth,
++                        valueWidth,
++                        headerHeight,
++                        tableBoldFont,
++                        textPaint,
++                        borderPaint,
++                        headerFillPaint);
++                }
++
++                PdfReplacementRow replacement = replacements[rowIndex];
++                SKPaint? rowFill = rowIndex % 2 == 1 ? alternateFillPaint : null;
++                float x = Margin;
++
++                DrawCell(
++                    page.Canvas,
++                    new SKRect(x, page.Y, x + nameWidth, page.Y + rowHeight),
++                    replacement.Name,
++                    tableBoldFont,
++                    textPaint,
++                    borderPaint,
++                    rowFill,
++                    SKTextAlign.Left);
++                x += nameWidth;
++
++                for (int columnIndex = 0; columnIndex < replacementHeaders.Count; columnIndex++)
++                {
++                    string value = columnIndex < replacement.Values.Count
++                        ? replacement.Values[columnIndex] ?? string.Empty
++                        : string.Empty;
++
++                    DrawCell(
++                        page.Canvas,
++                        new SKRect(x, page.Y, x + valueWidth, page.Y + rowHeight),
++                        value,
++                        tableFont,
++                        textPaint,
++                        borderPaint,
++                        rowFill,
++                        SKTextAlign.Center);
++                    x += valueWidth;
++                }
++
++                page.Y += rowHeight;
++            }
++        }
++
++        private static void DrawReplacementHeader(
++            PageState page,
++            IReadOnlyList<string> replacementHeaders,
++            float nameWidth,
++            float valueWidth,
++            float headerHeight,
++            SKFont tableBoldFont,
++            SKPaint textPaint,
++            SKPaint borderPaint,
++            SKPaint headerFillPaint)
++        {
++            float x = Margin;
++
++            DrawCell(
++                page.Canvas,
++                new SKRect(x, page.Y, x + nameWidth, page.Y + headerHeight),
++                "Nombre",
++                tableBoldFont,
++                textPaint,
++                borderPaint,
++                headerFillPaint,
++                SKTextAlign.Left);
++            x += nameWidth;
++
++            foreach (string header in replacementHeaders)
++            {
++                DrawCell(
++                    page.Canvas,
++                    new SKRect(x, page.Y, x + valueWidth, page.Y + headerHeight),
++                    header,
++                    tableBoldFont,
++                    textPaint,
++                    borderPaint,
++                    headerFillPaint,
++                    SKTextAlign.Center);
++                x += valueWidth;
++            }
++
++            page.Y += headerHeight;
++        }
++
++        private static void EnsureSpace(
++            SKDocument document,
++            ref PageState page,
++            ref int pageNumber,
++            float requiredHeight,
++            string transistorName,
++            SKFont footerFont,
++            SKPaint secondaryTextPaint,
++            SKFont sectionFont,
++            SKPaint textPaint)
++        {
++            if (page.Y + requiredHeight <= ContentBottom)
++                return;
++
++            FinishPage(document, page, footerFont, secondaryTextPaint);
++            page = StartPage(document, ++pageNumber);
++            DrawPageTitle(page, transistorName, sectionFont, textPaint);
++        }
++
++        private static PageState StartPage(SKDocument document, int pageNumber)
++        {
++            SKCanvas canvas = document.BeginPage(PageWidth, PageHeight);
++            canvas.Clear(SKColors.White);
++            return new PageState(canvas, pageNumber, Margin);
++        }
++
++        private static void FinishPage(
++            SKDocument document,
++            PageState page,
++            SKFont footerFont,
++            SKPaint secondaryTextPaint)
++        {
++            float footerBaseline = PageHeight - Margin + 2f;
++
++            DrawText(
++                page.Canvas,
++                "Nota: los valores mostrados corresponden a los parámetros técnicos de los transistores.",
++                Margin,
++                footerBaseline,
++                SKTextAlign.Left,
++                footerFont,
++                secondaryTextPaint);
++
++            DrawText(
++                page.Canvas,
++                $"Página {page.PageNumber}",
++                PageWidth - Margin,
++                footerBaseline,
++                SKTextAlign.Right,
++                footerFont,
++                secondaryTextPaint);
++
++            document.EndPage();
++        }
++
++        private static void DrawPageTitle(
++            PageState page,
++            string transistorName,
++            SKFont sectionFont,
++            SKPaint textPaint)
++        {
++            string safeName = string.IsNullOrWhiteSpace(transistorName)
++                ? "Transistor"
++                : transistorName;
++
++            DrawText(
++                page.Canvas,
++                $"Reemplazos para {safeName}",
++                Margin,
++                page.Y + 11f,
++                SKTextAlign.Left,
++                sectionFont,
++                textPaint);
++            page.Y += 18f;
++        }
++
++        private static void DrawContinuationTitle(
++            PageState page,
++            string transistorName,
++            string sectionTitle,
++            SKFont sectionFont,
++            SKPaint textPaint)
++        {
++            string safeName = string.IsNullOrWhiteSpace(transistorName)
++                ? "Transistor"
++                : transistorName;
++
++            DrawText(
++                page.Canvas,
++                $"Reemplazos para {safeName}",
++                Margin,
++                page.Y + 11f,
++                SKTextAlign.Left,
++                sectionFont,
++                textPaint);
++            page.Y += 18f;
++
++            DrawText(
++                page.Canvas,
++                sectionTitle,
++                Margin,
++                page.Y + 10f,
++                SKTextAlign.Left,
++                sectionFont,
++                textPaint);
++            page.Y += 20f;
++        }
++
++        private static void DrawCell(
++            SKCanvas canvas,
++            SKRect rect,
++            string? text,
++            SKFont font,
++            SKPaint textPaint,
++            SKPaint borderPaint,
++            SKPaint? fillPaint,
++            SKTextAlign alignment)
++        {
++            if (fillPaint is not null)
++                canvas.DrawRect(rect, fillPaint);
++
++            canvas.DrawRect(rect, borderPaint);
++
++            const float horizontalPadding = 4f;
++            float availableWidth = Math.Max(1f, rect.Width - (horizontalPadding * 2f));
++            string fittedText = FitText(text ?? string.Empty, availableWidth, font, textPaint);
++
++            float x = alignment switch
++            {
++                SKTextAlign.Center => rect.MidX,
++                SKTextAlign.Right => rect.Right - horizontalPadding,
++                _ => rect.Left + horizontalPadding
++            };
++
++            SKFontMetrics metrics = font.Metrics;
++            float baseline = rect.MidY - ((metrics.Ascent + metrics.Descent) / 2f);
++
++            canvas.Save();
++            canvas.ClipRect(rect);
++            DrawText(canvas, fittedText, x, baseline, alignment, font, textPaint);
++            canvas.Restore();
++        }
++
++        private static string FitText(
++            string text,
++            float maxWidth,
++            SKFont font,
++            SKPaint paint)
++        {
++            if (string.IsNullOrEmpty(text) || font.MeasureText(text, paint) <= maxWidth)
++                return text;
++
++            const string ellipsis = "…";
++            if (font.MeasureText(ellipsis, paint) > maxWidth)
++                return string.Empty;
++
++            int low = 0;
++            int high = text.Length;
++
++            while (low < high)
++            {
++                int middle = (low + high + 1) / 2;
++                string candidate = text[..middle] + ellipsis;
++
++                if (font.MeasureText(candidate, paint) <= maxWidth)
++                    low = middle;
++                else
++                    high = middle - 1;
++            }
++
++            return text[..low] + ellipsis;
++        }
++
++        private static void DrawText(
++            SKCanvas canvas,
++            string text,
++            float x,
++            float y,
++            SKTextAlign alignment,
++            SKFont font,
++            SKPaint paint)
++        {
++            canvas.DrawText(text, x, y, alignment, font, paint);
++        }
++
++        private sealed class PageState
++        {
++            public PageState(SKCanvas canvas, int pageNumber, float y)
++            {
++                Canvas = canvas;
++                PageNumber = pageNumber;
++                Y = y;
++            }
++
++            public SKCanvas Canvas { get; }
++            public int PageNumber { get; }
++            public float Y { get; set; }
++        }
++    }
++
++    public sealed record PdfReplacementRow(
++        string Name,
++        IReadOnlyList<string> Values);
++}
+diff -ruN dbapp_base/DbTransistorsApp/ViewModels/TransistorDetailViewModel.cs dbapp_work/DbTransistorsApp/ViewModels/TransistorDetailViewModel.cs
+--- dbapp_base/DbTransistorsApp/ViewModels/TransistorDetailViewModel.cs	2026-07-25 03:25:27.000000000 +0000
++++ dbapp_work/DbTransistorsApp/ViewModels/TransistorDetailViewModel.cs	2026-07-27 23:48:26.385663976 +0000
+@@ -1,953 +1,835 @@
+-﻿// ViewModels/TransistorDetailViewModel.cs
+-using CommunityToolkit.Mvvm.ComponentModel;
+-using CommunityToolkit.Mvvm.Input;
+-using DbTransistorsApp.Models.Base;
+-using DbTransistorsApp.Services;
+-using DbTransistorsApp.ViewModels.Base;
+-using DbTransistorsApp.Views;
+-using QuestPDF.Fluent;
+-
+-//using IntelliJ.Lang.Annotations;
+-using System.Collections.ObjectModel;
+-using System.Reflection;
+-
+-namespace DbTransistorsApp.ViewModels
+-{
+-    public partial class TransistorDetailViewModel : BaseViewModel
+-    {
+-        private readonly DatabaseService _databaseService;
+-        private readonly NavigationService _navigationService;
+-        private readonly DialogService _dialogService;
+-        private ITransistor _originalTransistor;
+-        private ITransistor _currentTransistor;
+-        private string _tableType;
+-        private int _id;
+-        private Type _modelType;
+-
+-        [ObservableProperty]
+-        private string _idString;
+-
+-        public int Id
+-        {
+-            get => _id;
+-            set
+-            {
+-                _id = value;
+-                // ✅ Cargar datos cuando se recibe el ID
+-                if (_id > 0 && !string.IsNullOrEmpty(Type))
+-                {
+-                    Task.Run(async () => await LoadTransistorData());
+-                }
+-            }
+-        }
+-
+-        public string Type
+-        {
+-            get => _tableType;
+-            set
+-            {
+-                _tableType = value;
+-                // ✅ Cargar datos cuando se recibe el tipo
+-                if (_id > 0 && !string.IsNullOrEmpty(_tableType))
+-                {
+-                    Task.Run(async () => await LoadTransistorData());
+-                }
+-            }
+-        }
+-
+-        [ObservableProperty]
+-        private string _transistorName;
+-
+-        [ObservableProperty]
+-        private string _transistorType;
+-
+-        [ObservableProperty]
+-        private string _transistorStructure;
+-
+-        [ObservableProperty]
+-        private Encapsulado _encapsulado;
+-
+-        public string EncapsuladoNombre => _encapsulado?.Nombre ?? "Desconocido";
+-
+-        // Called by the source generator when Encapsulado changes
+-        partial void OnEncapsuladoChanged(Encapsulado value)
+-        {
+-            OnPropertyChanged(nameof(EncapsuladoNombre));
+-        }
+-
+-        [ObservableProperty]
+-        private bool _hasEncapsuladoImage;
+-
+-        [ObservableProperty]
+-        private ObservableCollection<TransistorParameter> _parameters = new();
+-
+-        [ObservableProperty]
+-        private ObservableCollection<object> _replacements = new();
+-
+-        // Encabezados dinámicos para la tabla de reemplazos
+-        public ObservableCollection<string> ReplacementHeaders { get; } = new();
+-
+-        [ObservableProperty]
+-        private double _columnWidth;
+-
+-        public string ReplacementHeaderLine => string.Join(" | ", ReplacementHeaders);
+-
+-        [ObservableProperty]
+-        private int _replacementCount;
+-
+-        public TransistorDetailViewModel(DatabaseService databaseService, NavigationService navigationService, DialogService dialogService)
+-        {
+-            _databaseService = databaseService;
+-            _navigationService = navigationService;
+-            _dialogService = dialogService;
+-            try
+-            {
+-                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+-                double screenDp = main.Width / main.Density;
+-                double nameWidth = 150;
+-                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+-                double available = Math.Max(screenDp - nameWidth - 40, 200);
+-
+-                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+-
+-                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+-            }
+-            catch
+-            {
+-                ColumnWidth = 80;
+-            }
+-        }
+-
+-        // ✅ Método para cargar datos
+-        private async Task LoadTransistorData()
+-        {
+-            try
+-            {
+-                IsBusy = true;
+-
+-                // Obtener el transistor
+-                _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(_tableType, _id);
+-                if (_originalTransistor == null)
+-                {
+-                    await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
+-                    await _navigationService.NavigateBackAsync();
+-                    return;
+-                }
+-
+-                TransistorName = _originalTransistor.Name;
+-                System.Diagnostics.Debug.WriteLine($"Transistor loaded: Name={TransistorName}");
+-
+-                // Crear una copia editable
+-                _currentTransistor = CloneTransistor(_originalTransistor);
+-
+-                // Obtener la estructura
+-                var estructura = await _databaseService.GetEstructuraByIdAsync(_originalTransistor.StructId);
+-                TransistorStructure = estructura?.Nombre ?? "Desconocida";
+-
+-                // Obtener tipo de transistor
+-                TransistorType = GetTransistorDisplayType(_tableType);
+-
+-                // Obtener encapsulado
+-                var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(_tableType, _id);
+-                Encapsulado = caps.FirstOrDefault();
+-                HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
+-
+-                try
+-                {
+-                    var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+-                    double screenDp = main.Width / main.Density;
+-                    double nameWidth = 150;
+-                    int maxParams = ColumnLayoutHelper.MaxParameterCount;
+-                    double available = Math.Max(screenDp - nameWidth - 40, 200);
+-
+-                    ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+-
+-                    System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+-                }
+-                catch
+-                {
+-                    ColumnWidth = 80;
+-                }
+-
+-                // Configurar parámetros
+-                ConfigureParameters(_currentTransistor);
+-                System.Diagnostics.Debug.WriteLine($"Parameters count after configure: {Parameters?.Count}");
+-
+-                // Cargar reemplazos
+-                await LoadReplacementsAsync();
+-                System.Diagnostics.Debug.WriteLine($"ReplacementCount after load: {ReplacementCount}");
+-            }
+-            catch (Exception ex)
+-            {
+-                await _dialogService.ShowAlertAsync("Error", $"Error al cargar: {ex.Message}", "OK");
+-            }
+-            finally
+-            {
+-                IsBusy = false;
+-            }
+-        }
+-
+-        public async Task InitializeAsync(string type, int id)
+-        {
+-            System.Diagnostics.Debug.WriteLine($"InitializeAsync start: type={type}, id={id}");
+-            var normalizedType = type?.ToLowerInvariant();
+-            _tableType = normalizedType;
+-            _id = id;
+-            _modelType = GetModelType(normalizedType);
+-
+-            // Cargar el transistor
+-            _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(type, id);
+-            if (_originalTransistor == null)
+-            {
+-                await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
+-                await _navigationService.NavigateBackAsync();
+-                return;
+-            }
+-
+-            TransistorName = _originalTransistor.Name;
+-
+-            // Crear una copia editable
+-            _currentTransistor = CloneTransistor(_originalTransistor);
+-
+-            // Obtener la estructura
+-            var estructura = await _databaseService.GetEstructuraByIdAsync(_originalTransistor.StructId);
+-            TransistorStructure = estructura?.Nombre ?? "Desconocida";
+-
+-            // Obtener tipo de transistor
+-            TransistorType = GetTransistorDisplayType(type);
+-
+-            // Obtener encapsulado
+-            var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(type, id);
+-            Encapsulado = caps.FirstOrDefault();
+-            HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
+-
+-            try
+-            {
+-                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
+-                double screenDp = main.Width / main.Density;
+-                double nameWidth = 150;
+-                int maxParams = ColumnLayoutHelper.MaxParameterCount;
+-                double available = Math.Max(screenDp - nameWidth - 40, 200);
+-
+-                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
+-
+-                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
+-            }
+-            catch
+-            {
+-                ColumnWidth = 80;
+-            }
+-
+-            // Configurar parámetros
+-            ConfigureParameters(_currentTransistor);
+-
+-            // Cargar reemplazos
+-            await LoadReplacementsAsync();
+-        }
+-
+-        private Type GetModelType(string type)
+-        {
+-            var t = type?.ToLowerInvariant();
+-            return t switch
+-            {
+-                "bjtge" => typeof(BjtGe),
+-                "bjtsi" => typeof(BjtSi),
+-                "bjtprebias" => typeof(BjtPrebias),
+-                "bjtprebiasdual" => typeof(BjtPrebiasDual),
+-                "bjtsidual" => typeof(BjtSiDual),
+-                "jfet" => typeof(Jfet),
+-                "mosfet" => typeof(Mosfet),
+-                "mosfetdual" => typeof(MosfetDual),
+-                "igbt" => typeof(Igbt),
+-                "igbtdual" => typeof(IgbtDual),
+-                _ => throw new ArgumentException("Tipo de tabla no válido")
+-            };
+-        }
+-
+-        private ITransistor CloneTransistor(ITransistor original)
+-        {
+-            var type = original.GetType();
+-            var clone = (ITransistor)Activator.CreateInstance(type);
+-
+-            foreach (var prop in type.GetProperties())
+-            {
+-                if (prop.CanWrite && prop.Name != "CapsIds")
+-                {
+-                    prop.SetValue(clone, prop.GetValue(original));
+-                }
+-            }
+-
+-            // Clonar CapsIds
+-            if (original.CapsIds != null)
+-            {
+-                clone.CapsIds = new List<int>(original.CapsIds);
+-            }
+-
+-            return clone;
+-        }
+-
+-        private string GetTransistorDisplayType(string type)
+-        {
+-            return type switch
+-            {
+-                "bjtge" => "Transistor Bipolar de Germanio",
+-                "bjtsi" => "Transistor Bipolar de Silicio",
+-                "bjtprebias" => "Transistor Bipolar Pre-polarizado",
+-                "bjtprebiasdual" => "Transistor Bipolar Dual Pre-polarizado",
+-                "bjtsidual" => "Transistor Bipolar Dual de Silicio",
+-                "jfet" => "Transistor JFET",
+-                "mosfet" => "Transistor MOSFET",
+-                "mosfetdual" => "Transistor MOSFET Dual",
+-                "igbt" => "Transistor IGBT",
+-                "igbtdual" => "Transistor IGBT Dual",
+-                _ => "Transistor"
+-            };
+-        }
+-
+-        private void ConfigureParameters(ITransistor transistor)
+-        {
+-            Parameters.Clear();
+-
+-            // Obtener propiedades que son parámetros (excluyendo Id, Name, StructId, CapsIds)
+-            var props = transistor.GetType().GetProperties()
+-                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
+-                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
+-                .ToList();
+-
+-            // Configurar encabezados para la tabla de reemplazos (sin 'Nombre', que se muestra aparte)
+-            ReplacementHeaders.Clear();
+-            foreach (var prop in props)
+-            {
+-                ReplacementHeaders.Add(GetParameterDisplayName(prop.Name));
+-            }
+-            System.Diagnostics.Debug.WriteLine($"ReplacementHeaders: {string.Join(",", ReplacementHeaders)}");
+-            OnPropertyChanged(nameof(ReplacementHeaders));
+-
+-            foreach (var prop in props)
+-            {
+-                var value = prop.GetValue(transistor);
+-                var param = new TransistorParameter
+-                {
+-                    Name = prop.Name,
+-                    DisplayName = GetParameterDisplayName(prop.Name),
+-                    Unit = GetParameterUnit(prop.Name),
+-                    DefaultValue = value?.ToString() ?? "0"
+-                };
+-
+-                param.Value = param.DefaultValue;
+-                Parameters.Add(param);
+-            }
+-        }
+-        /*
+-        private string GetParameterDisplayName(string fieldName)
+-        {
+-            return fieldName switch
+-            {
+-                "Pc" or "Pd" => "Disipación de potencia",
+-                "Vcb" => "Voltaje Colector-Base",
+-                "Vce" => "Voltaje Colector-Emisor",
+-                "Veb" => "Voltaje Emisor-Base",
+-                "Vds" => "Voltaje Drenador-Fuente",
+-                "Vgs" => "Voltaje Compuerta-Fuente",
+-                "Vgsth" => "Voltaje Umbral",
+-                "Vcesat" => "VCE Saturación",
+-                "Veg" => "VEG",
+-                "Ic" => "Corriente de colector",
+-                "CurrentId" => "Corriente de drenador",
+-                "Tj" => "Temperatura de unión",
+-                "Ft" => "Frecuencia de transición",
+-                "Cc" => "Capacitancia",
+-                "Hfe" => "Ganancia",
+-                "Qg" => "Carga de compuerta",
+-                "Tr" => "Tiempo de subida",
+-                "Cd" => "Capacitancia de salida",
+-                "Rds" => "Resistencia",
+-                _ => fieldName
+-            };
+-        }
+-        */
+-        private string GetParameterDisplayName(string fieldName)
+-        {
+-            return fieldName switch
+-            {
+-                "Pc" or "Pd" => "Pot W",
+-                "Vcb" => "VCB",
+-                "Vce" => "VCE",
+-                "Veb" => "VEB",
+-                "Vds" => "VDS",
+-                "Vgs" => "VGS",
+-                "Vgsth" => "VGSTH",
+-                "Vcesat" => "VCE Sat",
+-                "Veg" => "VEG",
+-                "Ic" => "IC",
+-                "CurrentId" => "ID",
+-                "Tj" => "Tj",
+-                "Ft" => "Ft",
+-                "Cc" => "Cap",
+-                "Hfe" => "Hfe",
+-                "Qg" => "Qg",
+-                "Tr" => "Tr",
+-                "Cd" => "Cd",
+-                "Rds" => "Rds",
+-                _ => fieldName
+-            };
+-        }
+-
+-        private string GetParameterUnit(string fieldName)
+-        {
+-            return fieldName switch
+-            {
+-                "Pc" or "Pd" => "W",
+-                "Vcb" or "Vce" or "Veb" or "Vds" or "Vgs" or "Vgsth" or "Vcesat" or "Veg" => "V",
+-                "Ic" or "CurrentId" => "A",
+-                "Tj" => "°C",
+-                "Ft" => "MHz",
+-                "Cc" or "Cd" => "pF",
+-                "Qg" => "nC",
+-                "Tr" => "ns",
+-                "Rds" => "Ω",
+-                _ => ""
+-            };
+-        }
+-
+-        [RelayCommand]
+-        private async Task ResetToDefault()
+-        {
+-            // Restablecer todos los parámetros a los valores originales
+-            var props = _originalTransistor.GetType().GetProperties()
+-                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
+-                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
+-
+-            foreach (var prop in props)
+-            {
+-                var value = prop.GetValue(_originalTransistor);
+-                var param = Parameters.FirstOrDefault(p => p.Name == prop.Name);
+-                if (param != null)
+-                {
+-                    param.Value = value?.ToString() ?? "0";
+-                }
+-            }
+-
+-            // Recargar reemplazos
+-            await LoadReplacementsAsync();
+-
+-            await _dialogService.ShowToastAsync("Valores restablecidos a los valores originales");
+-        }
+-
+-        [RelayCommand]
+-        private async Task ParameterChanged(string parameterName)
+-        {
+-            // Actualizar el valor en el transistor actual
+-            var param = Parameters.FirstOrDefault(p => p.Name == parameterName);
+-            if (param != null)
+-            {
+-                var prop = _currentTransistor.GetType().GetProperty(parameterName);
+-                if (prop != null)
+-                {
+-                    if (double.TryParse(param.Value, out double value))
+-                    {
+-                        prop.SetValue(_currentTransistor, value);
+-                    }
+-                    else if (string.IsNullOrEmpty(param.Value))
+-                    {
+-                        prop.SetValue(_currentTransistor, null);
+-                    }
+-                }
+-            }
+-
+-            // Recargar reemplazos (con un pequeño delay para evitar muchas llamadas)
+-            await Task.Delay(500);
+-            await LoadReplacementsAsync();
+-        }
+-
+-        [RelayCommand]
+-        private async Task ShowEncapsuladoImage()
+-        {
+-            if (Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen))
+-            {
+-                try
+-                {
+-                    // Buscar la imagen en la carpeta de recursos
+-                    string imagePath = Path.Combine(FileSystem.AppDataDirectory, "Images", "Packages", Encapsulado.Imagen);
+-
+-                    // Si no existe, intentar en la carpeta de recursos
+-                    if (!File.Exists(imagePath))
+-                    {
+-                        // Intentar cargar desde recursos embebidos
+-                        using var stream = await FileSystem.OpenAppPackageFileAsync($"Images/Packages/{Encapsulado.Imagen}");
+-                        if (stream != null)
+-                        {
+-                            // Guardar temporalmente
+-                            string tempPath = Path.Combine(Path.GetTempPath(), Encapsulado.Imagen);
+-                            using var fileStream = File.Create(tempPath);
+-                            await stream.CopyToAsync(fileStream);
+-                            imagePath = tempPath;
+-                        }
+-                    }
+-
+-                    if (File.Exists(imagePath))
+-                    {
+-                        await _dialogService.ShowImagePopupAsync(imagePath, Encapsulado.Nombre);
+-                    }
+-                    else
+-                    {
+-                        await _dialogService.ShowAlertAsync("Imagen no encontrada",
+-                            $"No se encontró la imagen '{Encapsulado.Imagen}' para el encapsulado '{Encapsulado.Nombre}'", "OK");
+-                    }
+-                }
+-                catch (Exception ex)
+-                {
+-                    await _dialogService.ShowAlertAsync("Error", $"Error al cargar la imagen: {ex.Message}", "OK");
+-                }
+-            }
+-        }
+-
+-        [RelayCommand]
+-        private async Task SelectReplacement(object replacement)
+-        {
+-            var prop = replacement.GetType().GetProperty("Id");
+-            if (prop != null)
+-            {
+-                int id = (int)prop.GetValue(replacement);
+-                await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
+-                    new Dictionary<string, object>
+-                    {
+-                        { "Type", _tableType },
+-                        { "Id", id }
+-                    });
+-            }
+-        }
+-
+-        public Dictionary<string, string> OriginalParameters { get; } = new();
+-        private async Task LoadReplacementsAsync()
+-        {
+-            try
+-            {
+-                IsBusy = true;
+-
+-                // Obtener parámetros actuales
+-                var parameters = new Dictionary<string, object>();
+-                var props = _currentTransistor.GetType().GetProperties()
+-                    .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
+-                               p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
+-
+-                foreach (var prop in props)
+-                {
+-                    var value = prop.GetValue(_currentTransistor);
+-                    if (value != null && value is double doubleValue)
+-                    {
+-                        parameters[prop.Name] = doubleValue;
+-                    }
+-                }
+-
+-                OriginalParameters.Clear();
+-
+-                foreach (var prop in props)
+-                {
+-                    var value = prop.GetValue(_currentTransistor);
+-
+-                    OriginalParameters[prop.Name] = value?.ToString() ?? "";
+-                }
+-
+-                // Añadir el ID para excluir el transistor actual
+-                parameters["_id"] = _id;
+-                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: table={_tableType}, id={_id}, structId={_currentTransistor?.StructId}, capsCount={_currentTransistor?.CapsIds?.Count}");
+-                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync parameters: {string.Join(",", parameters.Select(kv => kv.Key + "=" + kv.Value))}");
+-
+-                // Obtener reemplazos
+-                var replacements = await _databaseService.GetReplacementsAsync(
+-                    _tableType,
+-                    parameters,
+-                    _currentTransistor?.StructId ?? 0,
+-                    _currentTransistor?.CapsIds
+-                );
+-                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: replacements returned count={replacements?.Count}");
+-                Replacements.Clear();
+-
+-                // Convertir a objetos dinámicos para mostrar en la tabla
+-                if (replacements != null)
+-                {
+-                    foreach (var item in replacements)
+-                    {
+-                        // Convertir cada item a ReplacementRow si es necesario
+-                        var row = new ReplacementRow();
+-                        var propId = item.GetType().GetProperty("Id");
+-                        if (propId != null)
+-                            row.Id = (int)propId.GetValue(item);
+-                        var propName = item.GetType().GetProperty("Name");
+-                        row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
+-
+-
+-                        // Obtener propiedades dinámicas y rellenar hasta el máximo global
+-                        var props2 = item.GetType().GetProperties()
+-                            .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
+-                            .ToList();
+-
+-                        int maxParams = ColumnLayoutHelper.MaxParameterCount;
+-                        for (int i = 0; i < maxParams; i++)
+-                        {
+-                            if (i < props2.Count)
+-                            {
+-                                var v = props2[i].GetValue(item);
+-                                row.Values.Add(v?.ToString() ?? string.Empty);
+-                            }
+-                            else
+-                            {
+-                                row.Values.Add(string.Empty);
+-                            }
+-                        }
+-
+-                        row.Original = item;
+-                        Replacements.Add(row);
+-                    }
+-                }
+-                ReplacementCount = Replacements.Count;
+-                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: ReplacementCount set to {ReplacementCount}");
+-            }
+-            finally
+-            {
+-                IsBusy = false;
+-            }
+-        }
+-        
+-        [RelayCommand]
+-        private async Task ExportToPdf()
+-        {
+-            try
+-            {
+-                IsBusy = true;
+-
+-                var replacements = Replacements.ToList();
+-                //var replacements = Replacements.Cast<dynamic>().ToList();
+-                if (!replacements.Any())
+-                {
+-                    await _dialogService.ShowAlertAsync("Sin datos", "No hay reemplazos para exportar", "OK");
+-                    return;
+-                }
+-
+-                // Nombre del archivo
+-                string fileName = $"Reemplazos_{TransistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+-
+-                // Usar CacheDirectory
+-                string folder = FileSystem.CacheDirectory;
+-                //string folder = FileSystem.Current.AppDataDirectory;
+-                Directory.CreateDirectory(folder);
+-
+-                string filePath = Path.Combine(folder, fileName);
+-
+-                // Eliminar si existe
+-                if (File.Exists(filePath))
+-                    File.Delete(filePath);
+-
+-                // Generar PDF
+-                await GeneratePdfAsync(filePath, replacements);
+-
+-                // Dar tiempo al sistema de archivos de Android
+-                await Task.Delay(300);
+-
+-                // Verificar que realmente existe
+-                if (!File.Exists(filePath))
+-                {
+-                    throw new FileNotFoundException(
+-                        $"El PDF no fue creado correctamente: {filePath}");
+-                }
+-
+-                var fileInfo = new FileInfo(filePath);
+-                System.Diagnostics.Debug.WriteLine($"PDF generado: {filePath}");
+-                System.Diagnostics.Debug.WriteLine($"Tamaño: {fileInfo.Length} bytes");
+-
+-                // Compartir
+-                await Share.Default.RequestAsync(new ShareFileRequest
+-                {
+-                    Title = "Compartir PDF de reemplazos",
+-                    File = new ShareFile(filePath)
+-                });
+-            }
+-            catch (Exception ex)
+-            {
+-                System.Diagnostics.Debug.WriteLine(ex.ToString());
+-                await _dialogService.ShowAlertAsync(
+-                    "Error",
+-                    ex.Message,
+-                    "OK");
+-            }
+-            finally
+-            {
+-                IsBusy = false;
+-            }
+-        }
+-
+-
+-        [RelayCommand]
+-        private async Task ExportToExcel()
+-        {
+-            try
+-            {
+-                IsBusy = true;
+-
+-                var replacements = Replacements.ToList();
+-                if (!replacements.Any())
+-                {
+-                    await _dialogService.ShowAlertAsync("Sin datos", "No hay reemplazos para exportar", "OK");
+-                    return;
+-                }
+-
+-                // Generar Excel
+-                string fileName = $"Reemplazos_{TransistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+-                string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+-
+-                // Implementar generación de Excel
+-                await GenerateExcelAsync(filePath, replacements);
+-
+-                // Compartir el archivo
+-                await Share.Default.RequestAsync(new ShareFileRequest
+-                {
+-                    Title = "Compartir Excel de reemplazos",
+-                    File = new ShareFile(filePath)
+-                });
+-            }
+-            catch (Exception ex)
+-            {
+-                await _dialogService.ShowAlertAsync("Error", $"Error al exportar a Excel: {ex.Message}", "OK");
+-            }
+-            finally
+-            {
+-                IsBusy = false;
+-            }
+-        }
+-
+-        [RelayCommand]
+-        private async Task Import()
+-        {
+-            try
+-            {
+-                // Seleccionar archivo Excel
+-                var customFileType = new FilePickerFileType(
+-                    new Dictionary<DevicePlatform, IEnumerable<string>>
+-                    {
+-                        { DevicePlatform.WinUI, new[] { ".xlsx", ".xls" } },
+-                        { DevicePlatform.macOS, new[] { "xlsx", "xls" } },
+-                        { DevicePlatform.Android, new[] { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel" } },
+-                        { DevicePlatform.iOS, new[] { "com.microsoft.excel.xlsx", "com.microsoft.excel.xls" } },
+-                    });
+-
+-                var options = new PickOptions
+-                {
+-                    PickerTitle = "Seleccionar archivo Excel",
+-                    FileTypes = customFileType,
+-                };
+-
+-                var file = await FilePicker.PickAsync(options);
+-                if (file != null)
+-                {
+-                    // Procesar el archivo Excel
+-                    await ProcessExcelImportAsync(file.FullPath);
+-                }
+-            }
+-            catch (Exception ex)
+-            {
+-                await _dialogService.ShowAlertAsync("Error", $"Error al importar: {ex.Message}", "OK");
+-            }
+-        }
+-
+-        [RelayCommand]
+-        private async Task New()
+-        {
+-            // Navegar a la página de creación
+-            await _navigationService.NavigateToAsync(nameof(TransistorEditPage),
+-                new Dictionary<string, object>
+-                {
+-                    { "Type", _tableType },
+-                    { "Mode", "New" }
+-                });
+-        }
+-
+-        [RelayCommand]
+-        private async Task Edit()
+-        {
+-            // Navegar a la página de edición
+-            await _navigationService.NavigateToAsync(nameof(TransistorEditPage),
+-                new Dictionary<string, object>
+-                {
+-                    { "Type", _tableType },
+-                    { "Id", _id },
+-                    { "Mode", "Edit" }
+-                });
+-        }
+-
+-        [RelayCommand]
+-        private async Task Delete()
+-        {
+-            var result = await _dialogService.ShowConfirmationAsync(
+-                "Confirmar eliminación",
+-                $"¿Está seguro de eliminar el transistor '{TransistorName}'? Esta acción eliminará también las relaciones en cascada.");
+-
+-            if (result)
+-            {
+-                try
+-                {
+-                    IsBusy = true;
+-                    await _databaseService.DeleteTransistorAsync(_tableType, _id);
+-                    await _dialogService.ShowToastAsync("Transistor eliminado correctamente");
+-                    await _navigationService.NavigateBackAsync();
+-                }
+-                catch (Exception ex)
+-                {
+-                    await _dialogService.ShowAlertAsync("Error", $"Error al eliminar: {ex.Message}", "OK");
+-                }
+-                finally
+-                {
+-                    IsBusy = false;
+-                }
+-            }
+-        }
+-        /*
+-        private async Task GeneratePdfAsync(string filePath, List<object> replacements)
+-        {
+-            // Implementación con iTextSharp o QuestPDF
+-            // Crear un PDF con tabla de reemplazos
+-        }
+-        */
+-        private async Task GeneratePdfAsync(string filePath, List<object> replacements)
+-        {
+-            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+-
+-            await Task.Run(() =>
+-            {
+-                QuestPDF.Fluent.Document.Create(document =>
+-                {
+-                    document.Page(page =>
+-                    {
+-                        page.Size(QuestPDF.Helpers.PageSizes.A4);
+-                        page.Margin(15);
+-
+-                        page.Header().Column(column =>
+-                        {
+-                            column.Item().Text($"Reemplazos para {TransistorName}")
+-                                .FontSize(18)
+-                                .Bold();
+-
+-                            column.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm:ss}")
+-                                .FontSize(9);
+-
+-                            column.Item().PaddingBottom(10);
+-
+-                            column.Item().Text("Parámetros del transistor original")
+-    .Bold()
+-    .FontSize(12);
+-
+-                            column.Item().Table(table =>
+-                            {
+-                                table.ColumnsDefinition(columns =>
+-                                {
+-                                    columns.ConstantColumn(180);
+-                                    columns.RelativeColumn();
+-                                });
+-
+-                                foreach (var p in OriginalParameters)
+-                                {
+-                                    table.Cell()
+-                                        .Border(1)
+-                                        .Padding(3)
+-                                        .Text(p.Key)
+-                                        .Bold();
+-
+-                                    table.Cell()
+-                                        .Border(1)
+-                                        .Padding(3)
+-                                        .Text(p.Value);
+-                                }
+-                            });
+-
+-                            column.Item().PaddingBottom(10);
+-                        });
+-
+-                        page.Content().Table(table =>
+-                        {
+-                            table.ColumnsDefinition(columns =>
+-                            {
+-                                columns.ConstantColumn(140);
+-
+-                                foreach (var _ in ReplacementHeaders)
+-                                    columns.RelativeColumn();
+-                            });
+-
+-                            table.Header(header =>
+-                            {
+-                                header.Cell()
+-                                    .Border(1)
+-                                    .Background("#D9EAF7")
+-                                    .Padding(4)
+-                                    .Text("Nombre")
+-                                    .Bold();
+-
+-                                foreach (string h in ReplacementHeaders)
+-                                {
+-                                    header.Cell()
+-                                        .Border(1)
+-                                        .Background("#D9EAF7")
+-                                        .Padding(4)
+-                                        .Text(h)
+-                                        .FontSize(8)
+-                                        .Bold();
+-                                }
+-                            });
+-
+-                            foreach (var item in replacements)
+-                            {
+-                                var type = item.GetType();
+-
+-                                var name = type.GetProperty("Name")?.GetValue(item)?.ToString() ?? "";
+-
+-                                var values = type.GetProperty("Values")?.GetValue(item) as IEnumerable<string>;
+-
+-                                table.Cell()
+-                                    .Border(1)
+-                                    .Padding(3)
+-                                    .Text(name);
+-
+-                                if (values != null)
+-                                {
+-                                    int count = 0;
+-
+-                                    foreach (var value in values)
+-                                    {
+-                                        table.Cell()
+-                                            .Border(1)
+-                                            .Padding(3)
+-                                            .AlignCenter()
+-                                            .Text(value ?? "");
+-
+-                                        count++;
+-                                    }
+-
+-                                    while (count < ReplacementHeaders.Count)
+-                                    {
+-                                        table.Cell()
+-                                            .Border(1)
+-                                            .Padding(3)
+-                                            .Text("");
+-
+-                                        count++;
+-                                    }
+-                                }
+-                            }
+-                        });
+-                    });
+-                })
+-                .GeneratePdf(filePath);
+-            });
+-        }
+-        private async Task GenerateExcelAsync(string filePath, List<object> replacements)
+-        {
+-            // Implementación con EPPlus o ClosedXML
+-            // Crear un Excel con tabla de reemplazos
+-        }
+-
+-        private async Task ProcessExcelImportAsync(string filePath)
+-        {
+-            // Implementar importación de Excel
+-            // Validar campos, no nulos, no repetidos
+-        }
+-    }
++﻿// ViewModels/TransistorDetailViewModel.cs
++using CommunityToolkit.Mvvm.ComponentModel;
++using CommunityToolkit.Mvvm.Input;
++using DbTransistorsApp.Models.Base;
++using DbTransistorsApp.Services;
++using DbTransistorsApp.ViewModels.Base;
++using DbTransistorsApp.Views;
++
++//using IntelliJ.Lang.Annotations;
++using System.Collections.ObjectModel;
++using System.Reflection;
++
++namespace DbTransistorsApp.ViewModels
++{
++    public partial class TransistorDetailViewModel : BaseViewModel
++    {
++        private readonly DatabaseService _databaseService;
++        private readonly NavigationService _navigationService;
++        private readonly DialogService _dialogService;
++        private readonly PdfExportService _pdfExportService;
++        private ITransistor _originalTransistor;
++        private ITransistor _currentTransistor;
++        private string _tableType;
++        private int _id;
++        private Type _modelType;
++
++        [ObservableProperty]
++        private string _idString;
++
++        public int Id
++        {
++            get => _id;
++            set
++            {
++                _id = value;
++                // ✅ Cargar datos cuando se recibe el ID
++                if (_id > 0 && !string.IsNullOrEmpty(Type))
++                {
++                    Task.Run(async () => await LoadTransistorData());
++                }
++            }
++        }
++
++        public string Type
++        {
++            get => _tableType;
++            set
++            {
++                _tableType = value;
++                // ✅ Cargar datos cuando se recibe el tipo
++                if (_id > 0 && !string.IsNullOrEmpty(_tableType))
++                {
++                    Task.Run(async () => await LoadTransistorData());
++                }
++            }
++        }
++
++        [ObservableProperty]
++        private string _transistorName;
++
++        [ObservableProperty]
++        private string _transistorType;
++
++        [ObservableProperty]
++        private string _transistorStructure;
++
++        [ObservableProperty]
++        private Encapsulado _encapsulado;
++
++        public string EncapsuladoNombre => _encapsulado?.Nombre ?? "Desconocido";
++
++        // Called by the source generator when Encapsulado changes
++        partial void OnEncapsuladoChanged(Encapsulado value)
++        {
++            OnPropertyChanged(nameof(EncapsuladoNombre));
++        }
++
++        [ObservableProperty]
++        private bool _hasEncapsuladoImage;
++
++        [ObservableProperty]
++        private ObservableCollection<TransistorParameter> _parameters = new();
++
++        [ObservableProperty]
++        private ObservableCollection<object> _replacements = new();
++
++        // Encabezados dinámicos para la tabla de reemplazos
++        public ObservableCollection<string> ReplacementHeaders { get; } = new();
++
++        [ObservableProperty]
++        private double _columnWidth;
++
++        public string ReplacementHeaderLine => string.Join(" | ", ReplacementHeaders);
++
++        [ObservableProperty]
++        private int _replacementCount;
++
++        public TransistorDetailViewModel(
++            DatabaseService databaseService,
++            NavigationService navigationService,
++            DialogService dialogService,
++            PdfExportService pdfExportService)
++        {
++            _databaseService = databaseService;
++            _navigationService = navigationService;
++            _dialogService = dialogService;
++            _pdfExportService = pdfExportService;
++            try
++            {
++                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
++                double screenDp = main.Width / main.Density;
++                double nameWidth = 150;
++                int maxParams = ColumnLayoutHelper.MaxParameterCount;
++                double available = Math.Max(screenDp - nameWidth - 40, 200);
++
++                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
++
++                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
++            }
++            catch
++            {
++                ColumnWidth = 80;
++            }
++        }
++
++        // ✅ Método para cargar datos
++        private async Task LoadTransistorData()
++        {
++            try
++            {
++                IsBusy = true;
++
++                // Obtener el transistor
++                _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(_tableType, _id);
++                if (_originalTransistor == null)
++                {
++                    await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
++                    await _navigationService.NavigateBackAsync();
++                    return;
++                }
++
++                TransistorName = _originalTransistor.Name;
++                System.Diagnostics.Debug.WriteLine($"Transistor loaded: Name={TransistorName}");
++
++                // Crear una copia editable
++                _currentTransistor = CloneTransistor(_originalTransistor);
++
++                // Obtener la estructura
++                var estructura = await _databaseService.GetEstructuraByIdAsync(_originalTransistor.StructId);
++                TransistorStructure = estructura?.Nombre ?? "Desconocida";
++
++                // Obtener tipo de transistor
++                TransistorType = GetTransistorDisplayType(_tableType);
++
++                // Obtener encapsulado
++                var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(_tableType, _id);
++                Encapsulado = caps.FirstOrDefault();
++                HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
++
++                try
++                {
++                    var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
++                    double screenDp = main.Width / main.Density;
++                    double nameWidth = 150;
++                    int maxParams = ColumnLayoutHelper.MaxParameterCount;
++                    double available = Math.Max(screenDp - nameWidth - 40, 200);
++
++                    ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
++
++                    System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
++                }
++                catch
++                {
++                    ColumnWidth = 80;
++                }
++
++                // Configurar parámetros
++                ConfigureParameters(_currentTransistor);
++                System.Diagnostics.Debug.WriteLine($"Parameters count after configure: {Parameters?.Count}");
++
++                // Cargar reemplazos
++                await LoadReplacementsAsync();
++                System.Diagnostics.Debug.WriteLine($"ReplacementCount after load: {ReplacementCount}");
++            }
++            catch (Exception ex)
++            {
++                await _dialogService.ShowAlertAsync("Error", $"Error al cargar: {ex.Message}", "OK");
++            }
++            finally
++            {
++                IsBusy = false;
++            }
++        }
++
++        public async Task InitializeAsync(string type, int id)
++        {
++            System.Diagnostics.Debug.WriteLine($"InitializeAsync start: type={type}, id={id}");
++            var normalizedType = type?.ToLowerInvariant();
++            _tableType = normalizedType;
++            _id = id;
++            _modelType = GetModelType(normalizedType);
++
++            // Cargar el transistor
++            _originalTransistor = await _databaseService.GetTransistorByTypeAndIdAsync(type, id);
++            if (_originalTransistor == null)
++            {
++                await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
++                await _navigationService.NavigateBackAsync();
++                return;
++            }
++
++            TransistorName = _originalTransistor.Name;
++
++            // Crear una copia editable
++            _currentTransistor = CloneTransistor(_originalTransistor);
++
++            // Obtener la estructura
++            var estructura = await _databaseService.GetEstructuraByIdAsync(_originalTransistor.StructId);
++            TransistorStructure = estructura?.Nombre ?? "Desconocida";
++
++            // Obtener tipo de transistor
++            TransistorType = GetTransistorDisplayType(type);
++
++            // Obtener encapsulado
++            var caps = await _databaseService.GetEncapsuladosByTransistorIdAsync(type, id);
++            Encapsulado = caps.FirstOrDefault();
++            HasEncapsuladoImage = Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen);
++
++            try
++            {
++                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
++                double screenDp = main.Width / main.Density;
++                double nameWidth = 150;
++                int maxParams = ColumnLayoutHelper.MaxParameterCount;
++                double available = Math.Max(screenDp - nameWidth - 40, 200);
++
++                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
++
++                System.Diagnostics.Debug.WriteLine($"ColumnWidth calculado = {ColumnWidth}");
++            }
++            catch
++            {
++                ColumnWidth = 80;
++            }
++
++            // Configurar parámetros
++            ConfigureParameters(_currentTransistor);
++
++            // Cargar reemplazos
++            await LoadReplacementsAsync();
++        }
++
++        private Type GetModelType(string type)
++        {
++            var t = type?.ToLowerInvariant();
++            return t switch
++            {
++                "bjtge" => typeof(BjtGe),
++                "bjtsi" => typeof(BjtSi),
++                "bjtprebias" => typeof(BjtPrebias),
++                "bjtprebiasdual" => typeof(BjtPrebiasDual),
++                "bjtsidual" => typeof(BjtSiDual),
++                "jfet" => typeof(Jfet),
++                "mosfet" => typeof(Mosfet),
++                "mosfetdual" => typeof(MosfetDual),
++                "igbt" => typeof(Igbt),
++                "igbtdual" => typeof(IgbtDual),
++                _ => throw new ArgumentException("Tipo de tabla no válido")
++            };
++        }
++
++        private ITransistor CloneTransistor(ITransistor original)
++        {
++            var type = original.GetType();
++            var clone = (ITransistor)Activator.CreateInstance(type);
++
++            foreach (var prop in type.GetProperties())
++            {
++                if (prop.CanWrite && prop.Name != "CapsIds")
++                {
++                    prop.SetValue(clone, prop.GetValue(original));
++                }
++            }
++
++            // Clonar CapsIds
++            if (original.CapsIds != null)
++            {
++                clone.CapsIds = new List<int>(original.CapsIds);
++            }
++
++            return clone;
++        }
++
++        private string GetTransistorDisplayType(string type)
++        {
++            return type switch
++            {
++                "bjtge" => "Transistor Bipolar de Germanio",
++                "bjtsi" => "Transistor Bipolar de Silicio",
++                "bjtprebias" => "Transistor Bipolar Pre-polarizado",
++                "bjtprebiasdual" => "Transistor Bipolar Dual Pre-polarizado",
++                "bjtsidual" => "Transistor Bipolar Dual de Silicio",
++                "jfet" => "Transistor JFET",
++                "mosfet" => "Transistor MOSFET",
++                "mosfetdual" => "Transistor MOSFET Dual",
++                "igbt" => "Transistor IGBT",
++                "igbtdual" => "Transistor IGBT Dual",
++                _ => "Transistor"
++            };
++        }
++
++        private void ConfigureParameters(ITransistor transistor)
++        {
++            Parameters.Clear();
++
++            // Obtener propiedades que son parámetros (excluyendo Id, Name, StructId, CapsIds)
++            var props = transistor.GetType().GetProperties()
++                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
++                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
++                .ToList();
++
++            // Configurar encabezados para la tabla de reemplazos (sin 'Nombre', que se muestra aparte)
++            ReplacementHeaders.Clear();
++            foreach (var prop in props)
++            {
++                ReplacementHeaders.Add(GetParameterDisplayName(prop.Name));
++            }
++            System.Diagnostics.Debug.WriteLine($"ReplacementHeaders: {string.Join(",", ReplacementHeaders)}");
++            OnPropertyChanged(nameof(ReplacementHeaders));
++
++            foreach (var prop in props)
++            {
++                var value = prop.GetValue(transistor);
++                var param = new TransistorParameter
++                {
++                    Name = prop.Name,
++                    DisplayName = GetParameterDisplayName(prop.Name),
++                    Unit = GetParameterUnit(prop.Name),
++                    DefaultValue = value?.ToString() ?? "0"
++                };
++
++                param.Value = param.DefaultValue;
++                Parameters.Add(param);
++            }
++        }
++        /*
++        private string GetParameterDisplayName(string fieldName)
++        {
++            return fieldName switch
++            {
++                "Pc" or "Pd" => "Disipación de potencia",
++                "Vcb" => "Voltaje Colector-Base",
++                "Vce" => "Voltaje Colector-Emisor",
++                "Veb" => "Voltaje Emisor-Base",
++                "Vds" => "Voltaje Drenador-Fuente",
++                "Vgs" => "Voltaje Compuerta-Fuente",
++                "Vgsth" => "Voltaje Umbral",
++                "Vcesat" => "VCE Saturación",
++                "Veg" => "VEG",
++                "Ic" => "Corriente de colector",
++                "CurrentId" => "Corriente de drenador",
++                "Tj" => "Temperatura de unión",
++                "Ft" => "Frecuencia de transición",
++                "Cc" => "Capacitancia",
++                "Hfe" => "Ganancia",
++                "Qg" => "Carga de compuerta",
++                "Tr" => "Tiempo de subida",
++                "Cd" => "Capacitancia de salida",
++                "Rds" => "Resistencia",
++                _ => fieldName
++            };
++        }
++        */
++        private string GetParameterDisplayName(string fieldName)
++        {
++            return fieldName switch
++            {
++                "Pc" or "Pd" => "Pot W",
++                "Vcb" => "VCB",
++                "Vce" => "VCE",
++                "Veb" => "VEB",
++                "Vds" => "VDS",
++                "Vgs" => "VGS",
++                "Vgsth" => "VGSTH",
++                "Vcesat" => "VCE Sat",
++                "Veg" => "VEG",
++                "Ic" => "IC",
++                "CurrentId" => "ID",
++                "Tj" => "Tj",
++                "Ft" => "Ft",
++                "Cc" => "Cap",
++                "Hfe" => "Hfe",
++                "Qg" => "Qg",
++                "Tr" => "Tr",
++                "Cd" => "Cd",
++                "Rds" => "Rds",
++                _ => fieldName
++            };
++        }
++
++        private string GetParameterUnit(string fieldName)
++        {
++            return fieldName switch
++            {
++                "Pc" or "Pd" => "W",
++                "Vcb" or "Vce" or "Veb" or "Vds" or "Vgs" or "Vgsth" or "Vcesat" or "Veg" => "V",
++                "Ic" or "CurrentId" => "A",
++                "Tj" => "°C",
++                "Ft" => "MHz",
++                "Cc" or "Cd" => "pF",
++                "Qg" => "nC",
++                "Tr" => "ns",
++                "Rds" => "Ω",
++                _ => ""
++            };
++        }
++
++        [RelayCommand]
++        private async Task ResetToDefault()
++        {
++            // Restablecer todos los parámetros a los valores originales
++            var props = _originalTransistor.GetType().GetProperties()
++                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
++                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
++
++            foreach (var prop in props)
++            {
++                var value = prop.GetValue(_originalTransistor);
++                var param = Parameters.FirstOrDefault(p => p.Name == prop.Name);
++                if (param != null)
++                {
++                    param.Value = value?.ToString() ?? "0";
++                }
++            }
++
++            // Recargar reemplazos
++            await LoadReplacementsAsync();
++
++            await _dialogService.ShowToastAsync("Valores restablecidos a los valores originales");
++        }
++
++        [RelayCommand]
++        private async Task ParameterChanged(string parameterName)
++        {
++            // Actualizar el valor en el transistor actual
++            var param = Parameters.FirstOrDefault(p => p.Name == parameterName);
++            if (param != null)
++            {
++                var prop = _currentTransistor.GetType().GetProperty(parameterName);
++                if (prop != null)
++                {
++                    if (double.TryParse(param.Value, out double value))
++                    {
++                        prop.SetValue(_currentTransistor, value);
++                    }
++                    else if (string.IsNullOrEmpty(param.Value))
++                    {
++                        prop.SetValue(_currentTransistor, null);
++                    }
++                }
++            }
++
++            // Recargar reemplazos (con un pequeño delay para evitar muchas llamadas)
++            await Task.Delay(500);
++            await LoadReplacementsAsync();
++        }
++
++        [RelayCommand]
++        private async Task ShowEncapsuladoImage()
++        {
++            if (Encapsulado != null && !string.IsNullOrEmpty(Encapsulado.Imagen))
++            {
++                try
++                {
++                    // Buscar la imagen en la carpeta de recursos
++                    string imagePath = Path.Combine(FileSystem.AppDataDirectory, "Images", "Packages", Encapsulado.Imagen);
++
++                    // Si no existe, intentar en la carpeta de recursos
++                    if (!File.Exists(imagePath))
++                    {
++                        // Intentar cargar desde recursos embebidos
++                        using var stream = await FileSystem.OpenAppPackageFileAsync($"Images/Packages/{Encapsulado.Imagen}");
++                        if (stream != null)
++                        {
++                            // Guardar temporalmente
++                            string tempPath = Path.Combine(Path.GetTempPath(), Encapsulado.Imagen);
++                            using var fileStream = File.Create(tempPath);
++                            await stream.CopyToAsync(fileStream);
++                            imagePath = tempPath;
++                        }
++                    }
++
++                    if (File.Exists(imagePath))
++                    {
++                        await _dialogService.ShowImagePopupAsync(imagePath, Encapsulado.Nombre);
++                    }
++                    else
++                    {
++                        await _dialogService.ShowAlertAsync("Imagen no encontrada",
++                            $"No se encontró la imagen '{Encapsulado.Imagen}' para el encapsulado '{Encapsulado.Nombre}'", "OK");
++                    }
++                }
++                catch (Exception ex)
++                {
++                    await _dialogService.ShowAlertAsync("Error", $"Error al cargar la imagen: {ex.Message}", "OK");
++                }
++            }
++        }
++
++        [RelayCommand]
++        private async Task SelectReplacement(object replacement)
++        {
++            var prop = replacement.GetType().GetProperty("Id");
++            if (prop != null)
++            {
++                int id = (int)prop.GetValue(replacement);
++                await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
++                    new Dictionary<string, object>
++                    {
++                        { "Type", _tableType },
++                        { "Id", id }
++                    });
++            }
++        }
++
++        public Dictionary<string, string> OriginalParameters { get; } = new();
++        private async Task LoadReplacementsAsync()
++        {
++            try
++            {
++                IsBusy = true;
++
++                // Obtener parámetros actuales
++                var parameters = new Dictionary<string, object>();
++                var props = _currentTransistor.GetType().GetProperties()
++                    .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
++                               p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
++
++                foreach (var prop in props)
++                {
++                    var value = prop.GetValue(_currentTransistor);
++                    if (value != null && value is double doubleValue)
++                    {
++                        parameters[prop.Name] = doubleValue;
++                    }
++                }
++
++                OriginalParameters.Clear();
++
++                foreach (var prop in props)
++                {
++                    var value = prop.GetValue(_currentTransistor);
++
++                    OriginalParameters[prop.Name] = value?.ToString() ?? "";
++                }
++
++                // Añadir el ID para excluir el transistor actual
++                parameters["_id"] = _id;
++                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: table={_tableType}, id={_id}, structId={_currentTransistor?.StructId}, capsCount={_currentTransistor?.CapsIds?.Count}");
++                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync parameters: {string.Join(",", parameters.Select(kv => kv.Key + "=" + kv.Value))}");
++
++                // Obtener reemplazos
++                var replacements = await _databaseService.GetReplacementsAsync(
++                    _tableType,
++                    parameters,
++                    _currentTransistor?.StructId ?? 0,
++                    _currentTransistor?.CapsIds
++                );
++                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: replacements returned count={replacements?.Count}");
++                Replacements.Clear();
++
++                // Convertir a objetos dinámicos para mostrar en la tabla
++                if (replacements != null)
++                {
++                    foreach (var item in replacements)
++                    {
++                        // Convertir cada item a ReplacementRow si es necesario
++                        var row = new ReplacementRow();
++                        var propId = item.GetType().GetProperty("Id");
++                        if (propId != null)
++                            row.Id = (int)propId.GetValue(item);
++                        var propName = item.GetType().GetProperty("Name");
++                        row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
++
++
++                        // Obtener propiedades dinámicas y rellenar hasta el máximo global
++                        var props2 = item.GetType().GetProperties()
++                            .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" && p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
++                            .ToList();
++
++                        int maxParams = ColumnLayoutHelper.MaxParameterCount;
++                        for (int i = 0; i < maxParams; i++)
++                        {
++                            if (i < props2.Count)
++                            {
++                                var v = props2[i].GetValue(item);
++                                row.Values.Add(v?.ToString() ?? string.Empty);
++                            }
++                            else
++                            {
++                                row.Values.Add(string.Empty);
++                            }
++                        }
++
++                        row.Original = item;
++                        Replacements.Add(row);
++                    }
++                }
++                ReplacementCount = Replacements.Count;
++                System.Diagnostics.Debug.WriteLine($"LoadReplacementsAsync: ReplacementCount set to {ReplacementCount}");
++            }
++            finally
++            {
++                IsBusy = false;
++            }
++        }
++        
++        [RelayCommand]
++        private async Task ExportToPdf()
++        {
++            try
++            {
++                IsBusy = true;
++
++                var replacements = Replacements.ToList();
++                //var replacements = Replacements.Cast<dynamic>().ToList();
++                if (!replacements.Any())
++                {
++                    await _dialogService.ShowAlertAsync("Sin datos", "No hay reemplazos para exportar", "OK");
++                    return;
++                }
++
++                // Nombre del archivo
++                string fileName = $"Reemplazos_{TransistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
++
++                // Usar CacheDirectory
++                string folder = FileSystem.CacheDirectory;
++                //string folder = FileSystem.Current.AppDataDirectory;
++                Directory.CreateDirectory(folder);
++
++                string filePath = Path.Combine(folder, fileName);
++
++                // Eliminar si existe
++                if (File.Exists(filePath))
++                    File.Delete(filePath);
++
++                // Convertir los datos de la vista a un modelo independiente para el PDF.
++                var pdfRows = replacements
++                    .OfType<ReplacementRow>()
++                    .Select(row => new PdfReplacementRow(
++                        row.Name,
++                        row.Values.Take(ReplacementHeaders.Count).ToList()))
++                    .ToList();
++
++                await _pdfExportService.ExportReplacementsToPdfAsync(
++                    filePath,
++                    TransistorName,
++                    TransistorType,
++                    TransistorStructure,
++                    new Dictionary<string, string>(OriginalParameters),
++                    ReplacementHeaders.ToList(),
++                    pdfRows);
++
++                // Dar tiempo al sistema de archivos de Android
++                await Task.Delay(300);
++
++                // Verificar que realmente existe
++                if (!File.Exists(filePath))
++                {
++                    throw new FileNotFoundException(
++                        $"El PDF no fue creado correctamente: {filePath}");
++                }
++
++                var fileInfo = new FileInfo(filePath);
++                System.Diagnostics.Debug.WriteLine($"PDF generado: {filePath}");
++                System.Diagnostics.Debug.WriteLine($"Tamaño: {fileInfo.Length} bytes");
++
++                // Compartir
++                await Share.Default.RequestAsync(new ShareFileRequest
++                {
++                    Title = "Compartir PDF de reemplazos",
++                    File = new ShareFile(filePath)
++                });
++            }
++            catch (Exception ex)
++            {
++                System.Diagnostics.Debug.WriteLine(ex.ToString());
++                await _dialogService.ShowAlertAsync(
++                    "Error",
++                    ex.Message,
++                    "OK");
++            }
++            finally
++            {
++                IsBusy = false;
++            }
++        }
++
++
++        [RelayCommand]
++        private async Task ExportToExcel()
++        {
++            try
++            {
++                IsBusy = true;
++
++                var replacements = Replacements.ToList();
++                if (!replacements.Any())
++                {
++                    await _dialogService.ShowAlertAsync("Sin datos", "No hay reemplazos para exportar", "OK");
++                    return;
++                }
++
++                // Generar Excel
++                string fileName = $"Reemplazos_{TransistorName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
++                string filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
++
++                // Implementar generación de Excel
++                await GenerateExcelAsync(filePath, replacements);
++
++                // Compartir el archivo
++                await Share.Default.RequestAsync(new ShareFileRequest
++                {
++                    Title = "Compartir Excel de reemplazos",
++                    File = new ShareFile(filePath)
++                });
++            }
++            catch (Exception ex)
++            {
++                await _dialogService.ShowAlertAsync("Error", $"Error al exportar a Excel: {ex.Message}", "OK");
++            }
++            finally
++            {
++                IsBusy = false;
++            }
++        }
++
++        [RelayCommand]
++        private async Task Import()
++        {
++            try
++            {
++                // Seleccionar archivo Excel
++                var customFileType = new FilePickerFileType(
++                    new Dictionary<DevicePlatform, IEnumerable<string>>
++                    {
++                        { DevicePlatform.WinUI, new[] { ".xlsx", ".xls" } },
++                        { DevicePlatform.macOS, new[] { "xlsx", "xls" } },
++                        { DevicePlatform.Android, new[] { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel" } },
++                        { DevicePlatform.iOS, new[] { "com.microsoft.excel.xlsx", "com.microsoft.excel.xls" } },
++                    });
++
++                var options = new PickOptions
++                {
++                    PickerTitle = "Seleccionar archivo Excel",
++                    FileTypes = customFileType,
++                };
++
++                var file = await FilePicker.PickAsync(options);
++                if (file != null)
++                {
++                    // Procesar el archivo Excel
++                    await ProcessExcelImportAsync(file.FullPath);
++                }
++            }
++            catch (Exception ex)
++            {
++                await _dialogService.ShowAlertAsync("Error", $"Error al importar: {ex.Message}", "OK");
++            }
++        }
++
++        [RelayCommand]
++        private async Task New()
++        {
++            // Navegar a la página de creación
++            await _navigationService.NavigateToAsync(nameof(TransistorEditPage),
++                new Dictionary<string, object>
++                {
++                    { "Type", _tableType },
++                    { "Mode", "New" }
++                });
++        }
++
++        [RelayCommand]
++        private async Task Edit()
++        {
++            // Navegar a la página de edición
++            await _navigationService.NavigateToAsync(nameof(TransistorEditPage),
++                new Dictionary<string, object>
++                {
++                    { "Type", _tableType },
++                    { "Id", _id },
++                    { "Mode", "Edit" }
++                });
++        }
++
++        [RelayCommand]
++        private async Task Delete()
++        {
++            var result = await _dialogService.ShowConfirmationAsync(
++                "Confirmar eliminación",
++                $"¿Está seguro de eliminar el transistor '{TransistorName}'? Esta acción eliminará también las relaciones en cascada.");
++
++            if (result)
++            {
++                try
++                {
++                    IsBusy = true;
++                    await _databaseService.DeleteTransistorAsync(_tableType, _id);
++                    await _dialogService.ShowToastAsync("Transistor eliminado correctamente");
++                    await _navigationService.NavigateBackAsync();
++                }
++                catch (Exception ex)
++                {
++                    await _dialogService.ShowAlertAsync("Error", $"Error al eliminar: {ex.Message}", "OK");
++                }
++                finally
++                {
++                    IsBusy = false;
++                }
++            }
++        }
++        private async Task GenerateExcelAsync(string filePath, List<object> replacements)
++        {
++            // Implementación con EPPlus o ClosedXML
++            // Crear un Excel con tabla de reemplazos
++        }
++
++        private async Task ProcessExcelImportAsync(string filePath)
++        {
++            // Implementar importación de Excel
++            // Validar campos, no nulos, no repetidos
++        }
++    }
+ }
+\ No newline at end of file

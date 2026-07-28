@@ -88,6 +88,7 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.10" />
 		<PackageReference Include="QuestPDF" Version="2026.7.1" />
+		<PackageReference Include="SkiaSharp" Version="4.150.1" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
 		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.10" />
 	</ItemGroup>

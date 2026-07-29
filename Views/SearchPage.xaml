@@ -42,14 +42,13 @@
         <!-- Lista de resultados -->
         <CollectionView Grid.Row="1"
                         ItemsSource="{Binding SearchResults}"
-                        SelectionMode="Single"
-                        SelectedItem="{Binding SelectedItem}">
+                        SelectionMode="None">
 
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="viewmodels:ByNameItem">
-                    <Grid Padding="10" 
+                    <Grid Padding="10"
                           ColumnDefinitions="*,Auto,Auto"
-                          BackgroundColor="{Binding BackgroundColor}">
+                          BackgroundColor="White">
 
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding BindingContext.SelectTransistorCommand, Source={x:Reference ThisPage}}"

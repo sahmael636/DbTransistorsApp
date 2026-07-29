@@ -1,89 +1,44 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             xmlns:converters="clr-namespace:DbTransistorsApp.Converters"
              x:Class="DbTransistorsApp.Views.EncapsuladoEditPage"
-             x:DataType="viewmodels:EncapsuladoEditViewModel"
              Title="{Binding Title}">
+    <ContentPage.Resources>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    </ContentPage.Resources>
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="14">
+                <Label Text="Nombre del encapsulado *" FontAttributes="Bold"/>
+                <Entry Text="{Binding Nombre}" Placeholder="Ej.: TO-92, SOT-23" BackgroundColor="White"/>
 
-    <ScrollView>
-        <StackLayout Padding="20" Spacing="15">
+                <Label Text="Imagen PNG o JPG" FontAttributes="Bold" Margin="0,6,0,0"/>
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                    <Entry Text="{Binding Imagen}" IsReadOnly="True" Placeholder="Sin imagen" BackgroundColor="#F5F5F5"/>
+                    <Button Grid.Column="1" Text="Seleccionar" Command="{Binding SelectImageCommand}"
+                            BackgroundColor="#1976D2" TextColor="White" FontSize="11"/>
+                    <Button Grid.Column="2" Text="Quitar" Command="{Binding RemoveImageCommand}"
+                            BackgroundColor="#757575" TextColor="White" FontSize="11"/>
+                </Grid>
 
-            <!-- Nombre -->
-            <Label Text="Nombre del encapsulado *" 
-                   FontSize="14" 
-                   FontAttributes="Bold"/>
+                <Border HeightRequest="230" Padding="8" BackgroundColor="#F5F5F5" Stroke="#DDDDDD">
+                    <Grid>
+                        <Label Text="Vista previa" TextColor="Gray" FontSize="11"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                        <Image Source="{Binding ImagenPreview}" Aspect="AspectFit"/>
+                    </Grid>
+                </Border>
+                <Label Text="La imagen se copiará al almacenamiento interno de la aplicación al guardar."
+                       FontSize="10" TextColor="Gray"/>
+            </VerticalStackLayout>
+        </ScrollView>
 
-            <Entry Text="{Binding Nombre}"
-                   Placeholder="Ej: TO-92, SOT-23, DIP-8"
-                   BackgroundColor="White"
-                   FontSize="16"/>
-
-            <!-- Imagen -->
-            <Label Text="Imagen" 
-                   FontSize="14" 
-                   FontAttributes="Bold"/>
-
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <Entry Grid.Column="0"
-                       Text="{Binding Imagen}"
-                       Placeholder="Nombre del archivo de imagen"
-                       IsReadOnly="True"
-                       BackgroundColor="#F5F5F5"/>
-
-                <Button Grid.Column="1"
-                        Text="📁 Seleccionar"
-                        BackgroundColor="#2196F3"
-                        TextColor="White"
-                        Command="{Binding SelectImageCommand}"/>
-            </Grid>
-
-            <!-- Vista previa de la imagen -->
-            <Border Margin="0,5" 
-                    Padding="10"
-                    BackgroundColor="#F5F5F5">
-                <StackLayout>
-                    <Label Text="Vista previa" 
-                           FontSize="12" 
-                           TextColor="Gray"/>
-
-                    <Image Source="{Binding ImagenPreview}" 
-                           Aspect="AspectFit"
-                           HeightRequest="150"
-                           HorizontalOptions="Center">
-                        <Image.Triggers>
-                            <DataTrigger TargetType="Image"
-                                         Binding="{Binding ImagenPreview}"
-                                         Value="{x:Null}">
-                                <Setter Property="Source" Value="no_image.png"/>
-                            </DataTrigger>
-                            <DataTrigger TargetType="Image"
-                                         Binding="{Binding ImagenPreview}"
-                                         Value="">
-                                <Setter Property="Source" Value="no_image.png"/>
-                            </DataTrigger>
-                        </Image.Triggers>
-                    </Image>
-                </StackLayout>
-            </Border>
-
-            <!-- Botones -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,20,0,0">
-                <Button Grid.Column="0"
-                        Text="Cancelar"
-                        BackgroundColor="#FF5722"
-                        TextColor="White"
-                        FontSize="16"
-                        Command="{Binding CancelCommand}"/>
-
-                <Button Grid.Column="1"
-                        Text="Guardar"
-                        BackgroundColor="#4CAF50"
-                        TextColor="White"
-                        FontSize="16"
-                        Command="{Binding SaveCommand}"
-                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
-            </Grid>
-        </StackLayout>
-    </ScrollView>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" Padding="10" ColumnSpacing="10" BackgroundColor="#FAFAFA">
+            <Button Text="Cancelar" Command="{Binding CancelCommand}" BackgroundColor="#616161" TextColor="White"/>
+            <Button Grid.Column="1" Text="Guardar" Command="{Binding SaveCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                    BackgroundColor="#2E7D32" TextColor="White"/>
+        </Grid>
+    </Grid>
 </ContentPage>

@@ -1,370 +1,243 @@
-﻿// ViewModels/TransistorEditViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-//using IntelliJ.Lang.Annotations;
 using System.Collections.ObjectModel;
-//using static Android.Icu.Text.CaseMap;
-//using static Java.Util.Jar.Attributes;
+using System.Globalization;
+using System.Reflection;
 
-namespace DbTransistorsApp.ViewModels
+namespace DbTransistorsApp.ViewModels;
+
+public partial class TransistorEditViewModel : BaseViewModel
 {
-    public partial class TransistorEditViewModel : BaseViewModel
+    private readonly DatabaseService _databaseService;
+    private readonly NavigationService _navigationService;
+    private readonly DialogService _dialogService;
+    private string _tableType = string.Empty;
+    private int _id;
+    private string _mode = "New";
+    private Type _modelType = null!;
+    private ITransistor _transistor = null!;
+
+    [ObservableProperty] private string _name = string.Empty;
+    [ObservableProperty] private string _transistorType = string.Empty;
+    [ObservableProperty] private ObservableCollection<ParameterField> _parameters = new();
+    [ObservableProperty] private ObservableCollection<Estructura> _estructuras = new();
+    [ObservableProperty] private Estructura? _selectedEstructura;
+    [ObservableProperty] private ObservableCollection<Encapsulado> _allEncapsulados = new();
+
+    public TransistorEditViewModel(
+        DatabaseService databaseService,
+        NavigationService navigationService,
+        DialogService dialogService)
     {
-        private readonly DatabaseService _databaseService;
-        private readonly NavigationService _navigationService;
-        private readonly DialogService _dialogService;
-        private string _tableType;
-        private int _id;
-        private string _mode;
-        private Type _modelType;
-        private ITransistor _transistor;
+        _databaseService = databaseService;
+        _navigationService = navigationService;
+        _dialogService = dialogService;
+    }
 
-        [ObservableProperty]
-        private string _name;
+    public async Task InitializeAsync(string type, int id, string mode)
+    {
+        _tableType = TransistorMetadata.NormalizeTableName(type);
+        _id = id;
+        _mode = string.Equals(mode, "Edit", StringComparison.OrdinalIgnoreCase) ? "Edit" : "New";
+        _modelType = TransistorMetadata.GetModelType(_tableType);
+        TransistorType = TransistorMetadata.GetDisplayName(_tableType);
+        Title = _mode == "New" ? $"Nuevo {TransistorType}" : $"Editar {TransistorType}";
 
-        [ObservableProperty]
-        private ObservableCollection<ParameterField> _parameters = new();
+        await LoadEstructurasAsync();
+        await LoadEncapsuladosAsync();
 
-        [ObservableProperty]
-        private ObservableCollection<Estructura> _estructuras = new();
-
-        [ObservableProperty]
-        private Estructura _selectedEstructura;
-
-        [ObservableProperty]
-        private ObservableCollection<Encapsulado> _allEncapsulados = new();
-
-        [ObservableProperty]
-        private ObservableCollection<Encapsulado> _selectedEncapsulados = new();
-
-        [ObservableProperty]
-        private string _title;
-
-        public TransistorEditViewModel(DatabaseService databaseService, NavigationService navigationService, DialogService dialogService)
+        if (_mode == "New")
         {
-            _databaseService = databaseService;
-            _navigationService = navigationService;
-            _dialogService = dialogService;
+            _transistor = (ITransistor)(Activator.CreateInstance(_modelType)
+                ?? throw new InvalidOperationException("No se pudo crear el modelo."));
+            Name = string.Empty;
+            SelectedEstructura = Estructuras.FirstOrDefault();
+            BuildParameters(null);
+            UpdateSelectionStyles();
+            return;
         }
 
-        public async Task InitializeAsync(string type, int id, string mode)
+        _transistor = await _databaseService.GetTransistorByTypeAndIdAsync(_tableType, _id)
+            ?? throw new InvalidOperationException("El transistor no existe.");
+        Name = _transistor.Name;
+        SelectedEstructura = Estructuras.FirstOrDefault(x => x.Id == _transistor.StructId)
+            ?? Estructuras.FirstOrDefault();
+        BuildParameters(_transistor);
+
+        foreach (var cap in AllEncapsulados)
+            cap.IsSelected = _transistor.CapsIds.Contains(cap.Id);
+        UpdateSelectionStyles();
+    }
+
+    private async Task LoadEstructurasAsync()
+    {
+        var available = await _databaseService.GetAvailableStructuresForTableAsync(_tableType);
+        if (available.Count == 0)
         {
-            _tableType = type;
-            _id = id;
-            _mode = mode;
-            _modelType = GetModelType(type);
+            var allowedIds = await _databaseService.GetAllowedStructureIdsForTableAsync(_tableType);
+            available = (await _databaseService.GetAllEstructurasAsync())
+                .Where(x => allowedIds.Contains(x.Id))
+                .ToList();
+        }
 
-            // Cargar estructuras disponibles
-            await LoadEstructurasAsync();
+        Estructuras.Clear();
+        foreach (var item in available)
+            Estructuras.Add(item);
+    }
 
-            // Cargar encapsulados disponibles
-            await LoadEncapsuladosAsync();
+    private async Task LoadEncapsuladosAsync()
+    {
+        AllEncapsulados.Clear();
+        foreach (var item in await _databaseService.GetAllEncapsuladosAsync())
+            AllEncapsulados.Add(item);
+    }
+
+    private void BuildParameters(object? source)
+    {
+        Parameters.Clear();
+        foreach (PropertyInfo property in TransistorMetadata.GetEditableProperties(_tableType))
+        {
+            object? value = source == null ? null : property.GetValue(source);
+            Type underlying = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            Parameters.Add(new ParameterField
+            {
+                Name = property.Name,
+                DisplayName = TransistorMetadata.GetDisplayNameForProperty(property.Name),
+                Unit = TransistorMetadata.GetUnitForProperty(property.Name),
+                IsNumeric = underlying != typeof(string),
+                Value = value == null ? string.Empty : Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty
+            });
+        }
+    }
+
+    partial void OnSelectedEstructuraChanged(Estructura? value) => UpdateSelectionStyles();
+
+    [RelayCommand]
+    private void SelectEstructura(Estructura estructura)
+    {
+        SelectedEstructura = estructura;
+    }
+
+    [RelayCommand]
+    private void ToggleEncapsulado(Encapsulado encapsulado)
+    {
+        encapsulado.IsSelected = !encapsulado.IsSelected;
+        UpdateSelectionStyles();
+    }
+
+    private void UpdateSelectionStyles()
+    {
+        foreach (var item in Estructuras)
+        {
+            item.IsSelected = item.Id == SelectedEstructura?.Id;
+        }
+
+    }
+
+    [RelayCommand]
+    private async Task Save()
+    {
+        string normalizedName = Name.Trim();
+        if (normalizedName.Length == 0)
+        {
+            await _dialogService.ShowAlertAsync("Datos requeridos", "El nombre es obligatorio.", "OK");
+            return;
+        }
+
+        if (SelectedEstructura == null)
+        {
+            await _dialogService.ShowAlertAsync("Datos requeridos", "Seleccione una estructura.", "OK");
+            return;
+        }
+
+        bool nameChanged = _mode == "New" ||
+            !string.Equals(normalizedName, _transistor.Name?.Trim(), StringComparison.OrdinalIgnoreCase);
+        if (nameChanged && await _databaseService.TransistorNameExistsAsync(
+                normalizedName,
+                _mode == "Edit" ? _tableType : null,
+                _mode == "Edit" ? _id : 0))
+        {
+            await _dialogService.ShowAlertAsync(
+                "Nombre duplicado",
+                "Ya existe un transistor con ese nombre, sin importar mayúsculas o minúsculas.",
+                "OK");
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            _transistor.Name = normalizedName;
+            _transistor.StructId = SelectedEstructura.Id;
+            _transistor.CapsIds = AllEncapsulados.Where(x => x.IsSelected).Select(x => x.Id).ToList();
+
+            foreach (var parameter in Parameters)
+            {
+                PropertyInfo? property = _modelType.GetProperty(parameter.Name);
+                if (property == null || !property.CanWrite)
+                    continue;
+
+                Type underlying = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                if (underlying == typeof(string))
+                {
+                    property.SetValue(_transistor,
+                        string.IsNullOrWhiteSpace(parameter.Value) ? null : parameter.Value.Trim());
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(parameter.Value))
+                {
+                    property.SetValue(_transistor, null);
+                    continue;
+                }
+
+                if (!TryParseDouble(parameter.Value, out double number))
+                {
+                    await _dialogService.ShowAlertAsync(
+                        "Valor inválido",
+                        $"El campo {parameter.DisplayName} debe contener un número válido.",
+                        "OK");
+                    return;
+                }
+                property.SetValue(_transistor, number);
+            }
 
             if (_mode == "New")
-            {
-                Title = $"Nuevo Transistor {GetTransistorDisplayType(type)}";
-                _transistor = (ITransistor)Activator.CreateInstance(_modelType);
-                InitializeNewTransistor();
-            }
+                await _databaseService.InsertTransistorAsync(_tableType, _transistor);
             else
-            {
-                Title = $"Editar Transistor";
-                _transistor = await _databaseService.GetTransistorByTypeAndIdAsync(type, id);
-                if (_transistor == null)
-                {
-                    await _dialogService.ShowAlertAsync("Error", "Transistor no encontrado", "OK");
-                    await _navigationService.NavigateBackAsync();
-                    return;
-                }
-                LoadTransistorData();
-            }
-        }
+                await _databaseService.UpdateTransistorAsync(_tableType, _transistor);
 
-        private void InitializeNewTransistor()
-        {
-            Name = string.Empty;
-            Parameters.Clear();
-
-            // Inicializar parámetros con valores predeterminados
-            var props = _modelType.GetProperties()
-                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
-                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
-
-            foreach (var prop in props)
-            {
-                Parameters.Add(new ParameterField
-                {
-                    Name = prop.Name,
-                    DisplayName = GetParameterDisplayName(prop.Name),
-                    Value = "0",
-                    Unit = GetParameterUnit(prop.Name),
-                    IsRequired = IsRequiredParameter(prop.Name)
-                });
-            }
-        }
-
-        private void LoadTransistorData()
-        {
-            Name = _transistor.Name;
-            Parameters.Clear();
-
-            // Cargar parámetros existentes
-            var props = _modelType.GetProperties()
-                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
-                           p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2");
-
-            foreach (var prop in props)
-            {
-                var value = prop.GetValue(_transistor);
-                Parameters.Add(new ParameterField
-                {
-                    Name = prop.Name,
-                    DisplayName = GetParameterDisplayName(prop.Name),
-                    Value = value?.ToString() ?? "0",
-                    Unit = GetParameterUnit(prop.Name),
-                    IsRequired = IsRequiredParameter(prop.Name)
-                });
-            }
-
-            // Seleccionar estructura
-            SelectedEstructura = Estructuras.FirstOrDefault(e => e.Id == _transistor.StructId);
-
-            // Seleccionar encapsulados
-            SelectedEncapsulados = new ObservableCollection<Encapsulado>(
-                AllEncapsulados.Where(e => _transistor.CapsIds.Contains(e.Id)));
-        }
-
-        private async Task LoadEstructurasAsync()
-        {
-            var all = await _databaseService.GetAllEstructurasAsync();
-            Estructuras.Clear();
-            foreach (var item in all)
-            {
-                Estructuras.Add(item);
-            }
-        }
-
-        private async Task LoadEncapsuladosAsync()
-        {
-            var all = await _databaseService.GetAllEncapsuladosAsync();
-            AllEncapsulados.Clear();
-            foreach (var item in all)
-            {
-                AllEncapsulados.Add(item);
-            }
-        }
-
-        [RelayCommand]
-        private async Task Save()
-        {
-            // Validar nombre
-            if (string.IsNullOrWhiteSpace(Name))
-            {
-                await _dialogService.ShowAlertAsync("Error", "El nombre del transistor es obligatorio", "OK");
-                return;
-            }
-
-            // Validar campos requeridos
-            var requiredFields = Parameters.Where(p => p.IsRequired);
-            foreach (var field in requiredFields)
-            {
-                if (string.IsNullOrWhiteSpace(field.Value) || field.Value == "0")
-                {
-                    await _dialogService.ShowAlertAsync("Error", $"El campo '{field.DisplayName}' es obligatorio", "OK");
-                    return;
-                }
-            }
-
-            // Validar estructura
-            if (SelectedEstructura == null)
-            {
-                await _dialogService.ShowAlertAsync("Error", "Debe seleccionar una estructura", "OK");
-                return;
-            }
-
-            // Validar encapsulado
-            if (!SelectedEncapsulados.Any())
-            {
-                await _dialogService.ShowAlertAsync("Error", "Debe seleccionar al menos un encapsulado", "OK");
-                return;
-            }
-
-            try
-            {
-                IsBusy = true;
-
-                // Actualizar valores
-                _transistor.Name = Name;
-                _transistor.StructId = SelectedEstructura.Id;
-
-                // Actualizar parámetros
-                foreach (var param in Parameters)
-                {
-                    var prop = _modelType.GetProperty(param.Name);
-                    if (prop != null)
-                    {
-                        if (double.TryParse(param.Value, out double doubleValue))
-                        {
-                            prop.SetValue(_transistor, doubleValue);
-                        }
-                        else
-                        {
-                            prop.SetValue(_transistor, null);
-                        }
-                    }
-                }
-
-                // Actualizar encapsulados
-                _transistor.CapsIds = SelectedEncapsulados.Select(e => e.Id).ToList();
-
-                if (_mode == "New")
-                {
-                    await _databaseService.InsertTransistorAsync(_tableType, _transistor);
-                }
-                else
-                {
-                    await _databaseService.UpdateTransistorAsync(_tableType, _transistor);
-                }
-
-                await _navigationService.NavigateBackAsync();
-                await _dialogService.ShowToastAsync($"Transistor {(_mode == "New" ? "creado" : "actualizado")} correctamente");
-            }
-            catch (Exception ex)
-            {
-                await _dialogService.ShowAlertAsync("Error", $"Error al guardar: {ex.Message}", "OK");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-        }
-
-        [RelayCommand]
-        private async Task Cancel()
-        {
+            await _dialogService.ShowToastAsync(
+                _mode == "New" ? "Transistor creado." : "Transistor actualizado.");
             await _navigationService.NavigateBackAsync();
         }
-
-        [RelayCommand]
-        private void ToggleEncapsulado(Encapsulado encapsulado)
+        catch (Exception ex)
         {
-            if (SelectedEncapsulados.Contains(encapsulado))
-            {
-                SelectedEncapsulados.Remove(encapsulado);
-            }
-            else
-            {
-                SelectedEncapsulados.Add(encapsulado);
-            }
+            await _dialogService.ShowAlertAsync("Error", $"No se pudo guardar: {ex.Message}", "OK");
         }
-
-        private Type GetModelType(string type)
+        finally
         {
-            return type switch
-            {
-                "bjtge" => typeof(BjtGe),
-                "bjtsi" => typeof(BjtSi),
-                "bjtprebias" => typeof(BjtPrebias),
-                "bjtprebiasdual" => typeof(BjtPrebiasDual),
-                "bjtsidual" => typeof(BjtSiDual),
-                "jfet" => typeof(Jfet),
-                "mosfet" => typeof(Mosfet),
-                "mosfetdual" => typeof(MosfetDual),
-                "igbt" => typeof(Igbt),
-                "igbtdual" => typeof(IgbtDual),
-                _ => throw new ArgumentException("Tipo de tabla no válido")
-            };
-        }
-
-        private string GetTransistorDisplayType(string type)
-        {
-            return type switch
-            {
-                "bjtge" => "Bipolar Germanium",
-                "bjtsi" => "Bipolar Silicio",
-                "bjtprebias" => "Bipolar Pre-polarizado",
-                "bjtprebiasdual" => "Bipolar Dual Pre-polarizado",
-                "bjtsidual" => "Bipolar Dual de Silicio",
-                "jfet" => "JFET",
-                "mosfet" => "MOSFET",
-                "mosfetdual" => "MOSFET Dual",
-                "igbt" => "IGBT",
-                "igbtdual" => "IGBT Dual",
-                _ => "Transistor"
-            };
-        }
-
-        private string GetParameterDisplayName(string fieldName)
-        {
-            return fieldName switch
-            {
-                "Pc" or "Pd" => "Potencia",
-                "Vcb" => "VCB",
-                "Vce" => "VCE",
-                "Veb" => "VEB",
-                "Vds" => "VDS",
-                "Vgs" => "VGS",
-                "Vgsth" => "VGSTH",
-                "Vcesat" => "VCESAT",
-                "Veg" => "VEG",
-                "Ic" or "Id" => "IC",
-                "Tj" => "TJ",
-                "Ft" => "Ft",
-                "Cc" => "CC",
-                "Hfe" => "Hfe",
-                "Qg" => "QG",
-                "Tr" => "Tr",
-                "Cd" => "CD",
-                "Rds" => "RDS",
-                _ => fieldName
-            };
-        }
-
-        private string GetParameterUnit(string fieldName)
-        {
-            return fieldName switch
-            {
-                "Pc" or "Pd" => "W",
-                "Vcb" or "Vce" or "Veb" or "Vds" or "Vgs" or "Vgsth" or "Vcesat" or "Veg" => "V",
-                "Ic" or "Id" => "A",
-                "Tj" => "°C",
-                "Ft" => "MHz",
-                "Cc" or "Cd" => "pF",
-                "Qg" => "nC",
-                "Tr" => "ns",
-                "Rds" => "Ω",
-                _ => ""
-            };
-        }
-
-        private bool IsRequiredParameter(string fieldName)
-        {
-            // Definir qué parámetros son obligatorios
-            return fieldName switch
-            {
-                "Pc" or "Pd" => true,
-                "Vce" or "Vds" => true,
-                "Ic" or "Id" => true,
-                _ => false
-            };
+            IsBusy = false;
         }
     }
 
-    public class ParameterField : ObservableObject
-    {
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
-        public string Unit { get; set; }
-        public bool IsRequired { get; set; }
+    [RelayCommand]
+    private Task Cancel() => _navigationService.NavigateBackAsync();
 
-        private string _value;
-        public string Value
-        {
-            get => _value;
-            set => SetProperty(ref _value, value);
-        }
-    }
+    private static bool TryParseDouble(string value, out double result)
+        => double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result)
+           || double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+}
+
+public partial class ParameterField : ObservableObject
+{
+    public string Name { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public bool IsNumeric { get; set; }
+    public Keyboard InputKeyboard => IsNumeric ? Keyboard.Numeric : Keyboard.Text;
+    [ObservableProperty] private string _value = string.Empty;
 }

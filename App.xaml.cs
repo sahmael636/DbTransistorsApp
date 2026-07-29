@@ -1,4 +1,4 @@
-﻿// App.xaml.cs
+// App.xaml.cs
 using DbTransistorsApp.Services;
 
 namespace DbTransistorsApp;
@@ -6,42 +6,75 @@ namespace DbTransistorsApp;
 public partial class App : Application
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly DatabaseService _databaseService;
+    private bool _startupCompleted;
 
-    public App(IServiceProvider serviceProvider)
+    public App(IServiceProvider serviceProvider, DatabaseService databaseService)
     {
         InitializeComponent();
         _serviceProvider = serviceProvider;
+        _databaseService = databaseService;
 
-        // Establecer la página principal
-        MainPage = _serviceProvider.GetRequiredService<AppShell>();
+        // Se muestra una página ligera inmediatamente. La copia y migración de la
+        // base de datos se realizan después, sin bloquear la creación de la ventana.
+        MainPage = CreateStartupPage();
     }
 
     protected override async void OnStart()
     {
         base.OnStart();
 
-        // Inicializar servicios si es necesario
+        if (_startupCompleted)
+            return;
+
+        _startupCompleted = true;
+
         try
         {
-            var databaseService = _serviceProvider.GetRequiredService<DatabaseService>();
-            // Verificar conexión a la base de datos
-            await Task.Run(() => databaseService.TestConnection());
+            await _databaseService.InitializeAsync();
+
+            // Resolver AppShell solo después de inicializar SQLite. Al resolver el
+            // Shell también se crean MainPage/MainViewModel, que dependen de la BBDD.
+            MainPage = _serviceProvider.GetRequiredService<AppShell>();
         }
         catch (Exception ex)
         {
-            await MainPage.DisplayAlert("Error", $"Error al conectar con la base de datos: {ex.Message}", "OK");
+            await MainPage!.DisplayAlert(
+                "Error de inicio",
+                $"No se pudo inicializar la base de datos: {ex.Message}",
+                "OK");
         }
     }
 
-    protected override void OnSleep()
+    private static Page CreateStartupPage()
     {
-        base.OnSleep();
-        // Guardar estado si es necesario
-    }
+        var indicator = new ActivityIndicator
+        {
+            IsRunning = true,
+            Color = Colors.White,
+            WidthRequest = 48,
+            HeightRequest = 48,
+            HorizontalOptions = LayoutOptions.Center
+        };
 
-    protected override void OnResume()
-    {
-        base.OnResume();
-        // Reanudar estado si es necesario
+        var label = new Label
+        {
+            Text = "Preparando la base de datos...",
+            TextColor = Colors.White,
+            FontSize = 16,
+            HorizontalTextAlignment = TextAlignment.Center
+        };
+
+        return new ContentPage
+        {
+            BackgroundColor = Color.FromArgb("#512BD4"),
+            Content = new VerticalStackLayout
+            {
+                Spacing = 18,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                Children = { indicator, label }
+            }
+        };
     }
 }

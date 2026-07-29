@@ -26,7 +26,7 @@ public partial class ImagePopup : ContentPage
     public ICommand CloseCommand { get; }
 
     public string ImagePath => _imagePath;
-    public string TitleText => _title;
+    public string PopupTitle => _title;
 
     private async void OnClose()
     {

@@ -6,169 +6,115 @@
              xmlns:converters="clr-namespace:DbTransistorsApp.Converters"
              x:Class="DbTransistorsApp.Views.TransistorListPage"
              x:Name="ThisPage"
-
              Title="{Binding Title}">
 
     <ContentPage.Resources>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </ContentPage.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- Filtros -->
-        <Border Grid.Row="0" 
-                BackgroundColor="#F5F5F5"
-                Padding="10"
-                StrokeThickness="0"
-                Stroke="#E0E0E0">
-
-            <StackLayout Spacing="8">
-                <Label Text="🔍 Filtros de búsqueda" 
-                       FontSize="16" 
-                       FontAttributes="Bold"
-                       TextColor="#333333"/>
-
-                <Label Text="Estructura"
-                       FontSize="12"
-                       FontAttributes="Bold"/>
-
-                <ScrollView Orientation="Horizontal"
-                            HorizontalScrollBarVisibility="Never">
-                    <HorizontalStackLayout Spacing="14"
-                                           BindableLayout.ItemsSource="{Binding AvailableStructures}"
-                                           RadioButtonGroup.GroupName="TransistorStructure"
-                                           RadioButtonGroup.SelectedValue="{Binding SelectedStructure, Mode=TwoWay}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="models:Estructura">
-                                <RadioButton Content="{Binding Nombre}"
-                                             Value="{Binding .}"
-                                             FontSize="13"/>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </HorizontalStackLayout>
-                </ScrollView>
-
-                <CollectionView ItemsSource="{Binding FilterFields}"
-                                ItemsLayout="VerticalGrid, 2"
-                                ItemSizingStrategy="MeasureAllItems">
-
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="viewmodels:FilterField">
-                            <Border Padding="5" StrokeThickness="0">
-                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
-                                    <Label Grid.Row="0" 
-                                           Text="{Binding DisplayName}" 
-                                           FontSize="12" 
-                                           FontAttributes="Bold"/>
-
-                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*">
-                                        <Entry Grid.Column="0"
-                                               Text="{Binding MinValue}"
-                                               Placeholder="De"
-                                               Keyboard="Numeric"
-                                               FontSize="12"
-                                               BackgroundColor="White"
-                                               HorizontalOptions="Fill"/>
-
-                                        <Label Grid.Column="1" 
-                                               Text=" - " 
-                                               FontSize="12" 
-                                               HorizontalOptions="Center"/>
-
-                                        <Entry Grid.Column="2"
-                                               Text="{Binding MaxValue}"
-                                               Placeholder="Hasta"
-                                               Keyboard="Numeric"
-                                               FontSize="12"
-                                               BackgroundColor="White"/>
-                                    </Grid>
-
-                                    <Label Grid.Row="2" 
-                                           Text="{Binding Unit}" 
-                                           FontSize="10" 
-                                           TextColor="Gray"
-                                           HorizontalOptions="End"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <Button Grid.Column="0"
-                            Text="🔍 Aplicar Filtros"
-                            BackgroundColor="#2196F3"
-                            TextColor="White"
-                            FontSize="14"
-                            Command="{Binding ApplyFiltersCommand}"/>
-
-                    <Button Grid.Column="1"
-                            Text="🔄 Limpiar Filtros"
-                            BackgroundColor="#FF5722"
-                            TextColor="White"
-                            FontSize="14"
-                            Command="{Binding ClearFiltersCommand}"/>
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Border Grid.Row="0"
+                Margin="8,6,8,2"
+                Padding="0"
+                Stroke="#D5D5D5"
+                StrokeThickness="1"
+                BackgroundColor="#F7F7F7">
+            <VerticalStackLayout Spacing="0">
+                <Grid Padding="12,10" BackgroundColor="#EEEEEE">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleFiltersCommand}"/>
+                    </Grid.GestureRecognizers>
+                    <Label Text="{Binding FiltersToggleText}"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           TextColor="#303030"/>
                 </Grid>
-            </StackLayout>
+
+                <VerticalStackLayout IsVisible="{Binding AreFiltersExpanded}"
+                                     Padding="12,8,12,12"
+                                     Spacing="8">
+                    <Label Text="Estructura" FontSize="12" FontAttributes="Bold"/>
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout Spacing="14"
+                                               BindableLayout.ItemsSource="{Binding AvailableStructures}"
+                                               RadioButtonGroup.GroupName="TransistorStructure"
+                                               RadioButtonGroup.SelectedValue="{Binding SelectedStructure, Mode=TwoWay}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:Estructura">
+                                    <RadioButton Content="{Binding Nombre}"
+                                                 Value="{Binding .}"
+                                                 FontSize="13"/>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+
+                    <CollectionView ItemsSource="{Binding FilterFields}"
+                                    ItemsLayout="VerticalGrid, 2"
+                                    ItemSizingStrategy="MeasureAllItems"
+                                    MaximumHeightRequest="390">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:FilterField">
+                                <Border Padding="4" StrokeThickness="0">
+                                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                                        <Label Text="{Binding DisplayName}" FontSize="11" FontAttributes="Bold"/>
+                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*">
+                                            <Entry Grid.Column="0" Text="{Binding MinValue}" Placeholder="De"
+                                                   Keyboard="Numeric" FontSize="12" BackgroundColor="White"/>
+                                            <Label Grid.Column="1" Text="–" Margin="4,0" VerticalOptions="Center"/>
+                                            <Entry Grid.Column="2" Text="{Binding MaxValue}" Placeholder="Hasta"
+                                                   Keyboard="Numeric" FontSize="12" BackgroundColor="White"/>
+                                        </Grid>
+                                        <Label Grid.Row="2" Text="{Binding Unit}" FontSize="10"
+                                               TextColor="Gray" HorizontalOptions="End"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Aplicar filtros" Command="{Binding ApplyFiltersCommand}"
+                                BackgroundColor="#1976D2" TextColor="White" FontSize="13"/>
+                        <Button Grid.Column="1" Text="Limpiar" Command="{Binding ClearFiltersCommand}"
+                                BackgroundColor="#EF6C00" TextColor="White" FontSize="13"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
         </Border>
 
-        <!-- Contador -->
-        <Grid Grid.Row="1" 
-              Padding="10,5"
-              BackgroundColor="#E3F2FD">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <Label Grid.Column="0" 
-                   Text="{Binding TotalMatches, StringFormat='Total: {0} transistores'}" 
-                   FontSize="14"
-                   FontAttributes="Bold"/>
-
-            <Label Grid.Column="1" 
-                   Text="{Binding TableDisplayName}" 
-                   FontSize="12"
-                   TextColor="Gray"/>
+        <Grid Grid.Row="1" Padding="10,5" BackgroundColor="#E3F2FD" ColumnDefinitions="*,Auto">
+            <Label Text="{Binding TotalMatches, StringFormat='Total: {0} transistores'}"
+                   FontSize="13" FontAttributes="Bold"/>
+            <Label Grid.Column="1" Text="{Binding TableDisplayName}" FontSize="11" TextColor="Gray"/>
         </Grid>
 
-
-        <!-- Grid para la tabla -->
         <Grid Grid.Row="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <!-- Encabezado FIJO -->
-                <RowDefinition Height="*"/>
-                <!-- Datos scrolleables -->
-            </Grid.RowDefinitions>
+            <ScrollView Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Always"
+                        VerticalScrollBarVisibility="Never">
+                <Grid WidthRequest="{Binding TableWidth}" RowDefinitions="Auto,*">
+                    <Grid x:Name="HeaderArea" Grid.Row="0" BackgroundColor="#1976D2"/>
+                    <CollectionView x:Name="TransistorsCollection"
+                                    Grid.Row="1"
+                                    ItemsSource="{Binding Transistors}"
+                                    SelectionMode="None"
+                                    IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
+                </Grid>
+            </ScrollView>
 
-            <!-- ENCABEZADO FIJO -->
-            <Grid x:Name="HeaderArea" Grid.Row="0" BackgroundColor="#2196F3" Padding="0">
-                <!-- Se construye en BuildHeader -->
-            </Grid>
-
-            <!-- DATOS SCROLLEABLES CON CollectionView -->
-            <CollectionView x:Name="TransistorsCollection" 
-                    Grid.Row="1"
-                    ItemsSource="{Binding Transistors}"
-                    SelectionMode="Single"
-                    IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
-                <!-- El ItemTemplate se construye en BuildItemTemplate -->
-            </CollectionView>
-
-            <!-- ActivityIndicator -->
-            <ActivityIndicator Grid.RowSpan="2"
-                       IsRunning="{Binding IsBusy}"
-                       IsVisible="{Binding IsBusy}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
         </Grid>
 
-
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="10"
+              Padding="10,8" BackgroundColor="#FAFAFA">
+            <Button Text="＋ Nuevo" Command="{Binding NewCommand}"
+                    BackgroundColor="#2E7D32" TextColor="White"/>
+            <Button Grid.Column="1" Text="⬆ Importar" Command="{Binding ImportCommand}"
+                    BackgroundColor="#1565C0" TextColor="White"/>
+        </Grid>
     </Grid>
 </ContentPage>

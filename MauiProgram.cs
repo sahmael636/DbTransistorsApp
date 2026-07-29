@@ -1,4 +1,4 @@
-﻿// MauiProgram.cs
+// MauiProgram.cs
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels;
 using DbTransistorsApp.Views;
@@ -33,6 +33,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<PdfExportService>();
         builder.Services.AddSingleton<ExcelExportService>();
         builder.Services.AddSingleton<ExcelImportService>();
+        builder.Services.AddSingleton<DownloadFileService>();
+        builder.Services.AddSingleton<ImageStorageService>();
 
         // Registrar ViewModels
         builder.Services.AddTransient<MainViewModel>();
@@ -53,7 +55,6 @@ public static class MauiProgram
         builder.Services.AddTransient<EncapsuladoEditPage>();
         builder.Services.AddTransient<EstructurasPage>();
         builder.Services.AddTransient<TransistorEditPage>();
-        builder.Services.AddTransient<ImagePopup>();
         builder.Services.AddTransient<AppShell>();
 
         var app = builder.Build();

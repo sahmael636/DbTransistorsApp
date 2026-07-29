@@ -1,4 +1,3 @@
-﻿// ViewModels/TransistorListViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DbTransistorsApp.Models.Base;
@@ -9,415 +8,426 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
 
-namespace DbTransistorsApp.ViewModels
+namespace DbTransistorsApp.ViewModels;
+
+public partial class TransistorListViewModel : BaseViewModel
 {
-    public partial class TransistorListViewModel : BaseViewModel
+    private readonly DatabaseService _databaseService;
+    private readonly NavigationService _navigationService;
+    private readonly DialogService _dialogService;
+    private readonly ExcelExportService _excelExportService;
+    private readonly ExcelImportService _excelImportService;
+    private readonly DownloadFileService _downloadFileService;
+    private readonly SemaphoreSlim _filterSemaphore = new(1, 1);
+
+    private TableType _tableType;
+    private Type _modelType = null!;
+    private List<PropertyInfo> _displayProperties = new();
+    private bool _isInitializingStructures;
+    private bool _initialized;
+
+    public class TransistorRow
     {
-        private readonly DatabaseService _databaseService;
-        private readonly NavigationService _navigationService;
-        private readonly SemaphoreSlim _filterSemaphore = new(1, 1);
-        private TableType _tableType;
-        private Type _modelType = null!;
-        private List<PropertyInfo> _displayProperties = new();
-        private bool _isInitializingStructures;
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public List<string> Values { get; set; } = new();
+        public object Original { get; set; } = null!;
+    }
 
-        // Fila preparada para la vista: Id, Name y valores de columnas dinámicas.
-        public class TransistorRow
+    [ObservableProperty]
+    private ObservableCollection<TransistorRow> _transistors = new();
+
+    [ObservableProperty]
+    private string _tableDisplayName = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<FilterField> _filterFields = new();
+
+    [ObservableProperty]
+    private ObservableCollection<Estructura> _availableStructures = new();
+
+    [ObservableProperty]
+    private Estructura? _selectedStructure;
+
+    [ObservableProperty]
+    private int _totalMatches;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _headerFields = new();
+
+    [ObservableProperty]
+    private double _columnWidth = 90;
+
+    [ObservableProperty]
+    private double _tableWidth = 600;
+
+    [ObservableProperty]
+    private bool _areFiltersExpanded;
+
+    public string FiltersToggleText => AreFiltersExpanded
+        ? "▼ Filtros de búsqueda"
+        : "▶ Filtros de búsqueda";
+
+    partial void OnAreFiltersExpandedChanged(bool value)
+        => OnPropertyChanged(nameof(FiltersToggleText));
+
+    public TransistorListViewModel(
+        DatabaseService databaseService,
+        NavigationService navigationService,
+        DialogService dialogService,
+        ExcelExportService excelExportService,
+        ExcelImportService excelImportService,
+        DownloadFileService downloadFileService)
+    {
+        _databaseService = databaseService;
+        _navigationService = navigationService;
+        _dialogService = dialogService;
+        _excelExportService = excelExportService;
+        _excelImportService = excelImportService;
+        _downloadFileService = downloadFileService;
+        AreFiltersExpanded = DeviceInfo.Idiom != DeviceIdiom.Phone;
+    }
+
+    public async Task InitializeAsync(TableType tableType)
+    {
+        _tableType = tableType;
+        _modelType = tableType.GetModelType();
+        TableDisplayName = tableType.GetDisplayName();
+        Title = $"Transistores {TableDisplayName}";
+
+        ConfigureDisplayProperties();
+        ConfigureFilters();
+        await LoadAvailableStructuresAsync();
+        await LoadSelectedStructureAsync();
+        _initialized = true;
+    }
+
+    public override async Task OnAppearingAsync()
+    {
+        if (!_initialized)
+            return;
+
+        int selectedId = SelectedStructure?.Id ?? 0;
+        await LoadAvailableStructuresAsync(selectedId);
+        await LoadSelectedStructureAsync();
+    }
+
+    private void ConfigureDisplayProperties()
+    {
+        _displayProperties = TransistorMetadata.GetDisplayProperties(_tableType.GetTableName()).ToList();
+        HeaderFields.Clear();
+        foreach (var property in _displayProperties)
+            HeaderFields.Add(TransistorMetadata.GetDisplayNameForProperty(property.Name));
+
+        ColumnWidth = DeviceInfo.Idiom == DeviceIdiom.Phone ? 90 : 110;
+        TableWidth = 150 + HeaderFields.Count * ColumnWidth;
+    }
+
+    private void ConfigureFilters()
+    {
+        FilterFields.Clear();
+        switch (_tableType)
         {
-            public int Id { get; set; }
-            public string Name { get; set; } = string.Empty;
-            public List<string> Values { get; set; } = new();
-            public object Original { get; set; } = null!;
-        }
+            case TableType.BjtGe:
+            case TableType.BjtSi:
+            case TableType.BjtPrebias:
+            case TableType.BjtPrebiasDual:
+            case TableType.BjtSiDual:
+                AddNumericFilter("Potencia (Pc)", "W", "Pc");
+                AddNumericFilter("VCE", "V", "Vce");
+                AddNumericFilter("VCB", "V", "Vcb");
+                AddNumericFilter("VEB", "V", "Veb");
+                AddNumericFilter("IC", "A", "Ic");
+                AddNumericFilter("Ft", "MHz", "Ft");
+                AddNumericFilter("Hfe", "", "Hfe");
+                break;
 
-        [ObservableProperty]
-        private ObservableCollection<object> _transistors = new();
+            case TableType.Jfet:
+            case TableType.Mosfet:
+            case TableType.MosfetDual:
+                AddNumericFilter("Potencia (Pd)", "W", "Pd");
+                AddNumericFilter("VDS", "V", "Vds");
+                AddNumericFilter("VGS", "V", "Vgs");
+                AddNumericFilter("VGSTH", "V", "Vgsth");
+                AddNumericFilter("ID", "A", "CurrentId");
+                AddNumericFilter("RDS", "Ω", "Rds");
+                break;
 
-        [ObservableProperty]
-        private string _tableDisplayName = string.Empty;
-
-        [ObservableProperty]
-        private ObservableCollection<FilterField> _filterFields = new();
-
-        [ObservableProperty]
-        private ObservableCollection<Estructura> _availableStructures = new();
-
-        [ObservableProperty]
-        private Estructura? _selectedStructure;
-
-        [ObservableProperty]
-        private int _totalMatches;
-
-        [ObservableProperty]
-        private ObservableCollection<string> _headerFields = new();
-
-        [ObservableProperty]
-        private string _headerColumns = string.Empty;
-
-        [ObservableProperty]
-        private string _columnDefinitions = string.Empty;
-
-        [ObservableProperty]
-        private double _columnWidth;
-
-        public TransistorListViewModel(DatabaseService databaseService, NavigationService navigationService)
-        {
-            _databaseService = databaseService;
-            _navigationService = navigationService;
-            ColumnWidth = 80;
-        }
-
-        public async Task InitializeAsync(TableType tableType)
-        {
-            _tableType = tableType;
-            _modelType = tableType.GetModelType();
-            TableDisplayName = tableType.GetDisplayName();
-            Title = $"Transistores {TableDisplayName}";
-
-            ConfigureDisplayProperties();
-            ConfigureColumnWidth();
-            ConfigureFilters();
-            ConfigureHeaders();
-
-            await LoadAvailableStructuresAsync();
-            await LoadSelectedStructureAsync();
-        }
-
-        private void ConfigureColumnWidth()
-        {
-            try
-            {
-                var main = Microsoft.Maui.Devices.DeviceDisplay.MainDisplayInfo;
-                double screenDp = main.Width / main.Density;
-                const double nameWidth = 150;
-                int maxParams = ColumnLayoutHelper.MaxParameterCount;
-                double available = Math.Max(screenDp - nameWidth - 40, 200);
-                ColumnWidth = Math.Max(50, available / Math.Max(1, maxParams));
-            }
-            catch
-            {
-                ColumnWidth = 80;
-            }
-        }
-
-        private void ConfigureDisplayProperties()
-        {
-            _displayProperties = _modelType.GetProperties()
-                .Where(p => p.Name != "Id" && p.Name != "Name" && p.Name != "StructId" &&
-                            p.Name != "CapsIds" && p.Name != "R1" && p.Name != "R2")
-                .ToList();
-
-            int maxParams = ColumnLayoutHelper.MaxParameterCount;
-
-            var columns = new List<string> { "Auto" };
-            for (int i = 0; i < maxParams; i++)
-            {
-                columns.Add("Auto");
-            }
-            ColumnDefinitions = string.Join(",", columns);
-
-            HeaderFields.Clear();
-            for (int i = 0; i < maxParams; i++)
-            {
-                HeaderFields.Add(i < _displayProperties.Count
-                    ? GetParameterDisplayName(_displayProperties[i].Name)
-                    : string.Empty);
-            }
-
-            HeaderColumns = string.Join(",", HeaderFields.Select(_ => "Auto"));
-        }
-
-        private void ConfigureFilters()
-        {
-            FilterFields.Clear();
-
-            switch (_tableType)
-            {
-                case TableType.BjtGe:
-                case TableType.BjtSi:
-                case TableType.BjtPrebias:
-                case TableType.BjtPrebiasDual:
-                case TableType.BjtSiDual:
-                    AddNumericFilter("Potencia (Pc)", "W", "Pc");
-                    AddNumericFilter("VCE", "V", "Vce");
-                    AddNumericFilter("VCB", "V", "Vcb");
-                    AddNumericFilter("VEB", "V", "Veb");
-                    AddNumericFilter("IC", "A", "Ic");
-                    AddNumericFilter("Ft", "MHz", "Ft");
-                    AddNumericFilter("Hfe", "", "Hfe");
-                    break;
-
-                case TableType.Jfet:
-                case TableType.Mosfet:
-                case TableType.MosfetDual:
-                    AddNumericFilter("Potencia (Pd)", "W", "Pd");
-                    AddNumericFilter("VDS", "V", "Vds");
-                    AddNumericFilter("VGS", "V", "Vgs");
-                    AddNumericFilter("VGSTH", "V", "Vgsth");
-                    AddNumericFilter("ID", "A", "CurrentId");
-                    AddNumericFilter("RDS", "Ω", "Rds");
-                    break;
-
-                case TableType.Igbt:
-                case TableType.IgbtDual:
-                    AddNumericFilter("Potencia (Pc)", "W", "Pc");
-                    AddNumericFilter("VCE", "V", "Vce");
-                    AddNumericFilter("VCESAT", "V", "Vcesat");
-                    AddNumericFilter("VEG", "V", "Veg");
-                    AddNumericFilter("IC", "A", "Ic");
-                    AddNumericFilter("Tr", "ns", "Tr");
-                    break;
-            }
-        }
-
-        private void AddNumericFilter(string displayName, string unit, string field)
-        {
-            FilterFields.Add(new FilterField
-            {
-                DisplayName = displayName,
-                Field = field,
-                Unit = unit,
-                MinValue = "0",
-                MaxValue = "9999"
-            });
-        }
-
-        private void ConfigureHeaders()
-        {
-            // Los encabezados se configuran en ConfigureDisplayProperties.
-        }
-
-        private async Task LoadAvailableStructuresAsync()
-        {
-            var structures = await _databaseService.GetAvailableStructuresForTableAsync(
-                _tableType.GetTableName());
-
-            _isInitializingStructures = true;
-            try
-            {
-                SelectedStructure = null;
-                AvailableStructures.Clear();
-
-                foreach (var structure in structures)
-                {
-                    AvailableStructures.Add(structure);
-                }
-
-                // No se ofrece la opción "Todas": siempre se selecciona la primera disponible.
-                SelectedStructure = AvailableStructures.FirstOrDefault();
-            }
-            finally
-            {
-                _isInitializingStructures = false;
-            }
-        }
-
-        partial void OnSelectedStructureChanged(Estructura? value)
-        {
-            if (!_isInitializingStructures && value != null)
-            {
-                // Cambiar la estructura filtra inmediatamente, pero no aplica los rangos numéricos.
-                _ = LoadSelectedStructureAsync();
-            }
-        }
-
-        private async Task LoadSelectedStructureAsync()
-        {
-            await _filterSemaphore.WaitAsync();
-            try
-            {
-                IsBusy = true;
-
-                if (SelectedStructure == null)
-                {
-                    SetTransistors(Array.Empty<object>());
-                    return;
-                }
-
-                var results = await _databaseService.GetFilteredTransistorsAsync(
-                    _tableType.GetTableName(),
-                    new Dictionary<string, double>(),
-                    new Dictionary<string, double>(),
-                    SelectedStructure.Id);
-
-                SetTransistors(results);
-            }
-            finally
-            {
-                IsBusy = false;
-                _filterSemaphore.Release();
-            }
-        }
-
-        [RelayCommand]
-        private async Task ApplyFilters()
-        {
-            await _filterSemaphore.WaitAsync();
-            try
-            {
-                IsBusy = true;
-
-                if (SelectedStructure == null)
-                {
-                    SetTransistors(Array.Empty<object>());
-                    return;
-                }
-
-                var minimumFilters = new Dictionary<string, double>();
-                var maximumFilters = new Dictionary<string, double>();
-
-                foreach (var filter in FilterFields)
-                {
-                    if (TryParseFilterValue(filter.MinValue, out double min) && min > 0)
-                    {
-                        minimumFilters[filter.Field] = min;
-                    }
-
-                    if (TryParseFilterValue(filter.MaxValue, out double max) && max < 9999)
-                    {
-                        maximumFilters[filter.Field] = max;
-                    }
-                }
-
-                var results = await _databaseService.GetFilteredTransistorsAsync(
-                    _tableType.GetTableName(),
-                    minimumFilters,
-                    maximumFilters,
-                    SelectedStructure.Id);
-
-                SetTransistors(results);
-            }
-            finally
-            {
-                IsBusy = false;
-                _filterSemaphore.Release();
-            }
-        }
-
-        [RelayCommand]
-        private async Task ClearFilters()
-        {
-            foreach (var filter in FilterFields)
-            {
-                filter.MinValue = "0";
-                filter.MaxValue = "9999";
-            }
-
-            // Se conserva la estructura seleccionada y se muestran todos sus registros.
-            await LoadSelectedStructureAsync();
-        }
-
-        private static bool TryParseFilterValue(string? text, out double value)
-        {
-            return double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value) ||
-                   double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
-        }
-
-        private void SetTransistors(IEnumerable<object> items)
-        {
-            Transistors.Clear();
-
-            foreach (var item in items)
-            {
-                Transistors.Add(CreateRowFromObject(item));
-            }
-
-            TotalMatches = Transistors.Count;
-        }
-
-        [RelayCommand]
-        private async Task SelectTransistor(object transistor)
-        {
-            try
-            {
-                object original = transistor is TransistorRow row ? row.Original : transistor;
-                var prop = original.GetType().GetProperty("Id");
-
-                if (prop?.GetValue(original) is int id)
-                {
-                    await _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
-                        new Dictionary<string, object>
-                        {
-                            { "Type", _tableType.GetTableName() },
-                            { "Id", id }
-                        });
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"SelectTransistor error: {ex}");
-            }
-        }
-
-        private string GetParameterDisplayName(string fieldName)
-        {
-            return fieldName switch
-            {
-                "Pc" or "Pd" => "Potencia",
-                "Vcb" => "VCB",
-                "Vce" => "VCE",
-                "Veb" => "VEB",
-                "Vds" => "VDS",
-                "Vgs" => "VGS",
-                "Vgsth" => "VGSTH",
-                "Vcesat" => "VCESAT",
-                "Veg" => "VEG",
-                "Ic" => "IC",
-                "CurrentId" => "ID",
-                "Tj" => "TJ",
-                "Ft" => "Ft",
-                "Cc" => "CC",
-                "Hfe" => "Hfe",
-                "Qg" => "QG",
-                "Tr" => "Tr",
-                "Cd" => "CD",
-                "Rds" => "RDS",
-                _ => fieldName
-            };
-        }
-
-        private TransistorRow CreateRowFromObject(object item)
-        {
-            var row = new TransistorRow();
-
-            try
-            {
-                var propId = item.GetType().GetProperty("Id");
-                if (propId?.GetValue(item) is int id)
-                {
-                    row.Id = id;
-                }
-
-                var propName = item.GetType().GetProperty("Name");
-                row.Name = propName?.GetValue(item)?.ToString() ?? string.Empty;
-
-                int maxParams = ColumnLayoutHelper.MaxParameterCount;
-                for (int i = 0; i < maxParams; i++)
-                {
-                    if (i < _displayProperties.Count)
-                    {
-                        var value = _displayProperties[i].GetValue(item);
-                        row.Values.Add(value?.ToString() ?? string.Empty);
-                    }
-                    else
-                    {
-                        row.Values.Add(string.Empty);
-                    }
-                }
-
-                row.Original = item;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"CreateRowFromObject error: {ex}");
-                int maxParams = ColumnLayoutHelper.MaxParameterCount;
-                while (row.Values.Count < maxParams)
-                {
-                    row.Values.Add(string.Empty);
-                }
-            }
-
-            return row;
+            case TableType.Igbt:
+            case TableType.IgbtDual:
+                AddNumericFilter("Potencia (Pc)", "W", "Pc");
+                AddNumericFilter("VCE", "V", "Vce");
+                AddNumericFilter("VCESAT", "V", "Vcesat");
+                AddNumericFilter("VEG", "V", "Veg");
+                AddNumericFilter("IC", "A", "Ic");
+                AddNumericFilter("Tr", "ns", "Tr");
+                break;
         }
     }
+
+    private void AddNumericFilter(string displayName, string unit, string field)
+    {
+        FilterFields.Add(new FilterField
+        {
+            DisplayName = displayName,
+            Field = field,
+            Unit = unit,
+            MinValue = "0",
+            MaxValue = "9999"
+        });
+    }
+
+    private async Task LoadAvailableStructuresAsync(int preferredId = 0)
+    {
+        var structures = await _databaseService.GetAvailableStructuresForTableAsync(_tableType.GetTableName());
+        _isInitializingStructures = true;
+        try
+        {
+            AvailableStructures.Clear();
+            foreach (var structure in structures)
+                AvailableStructures.Add(structure);
+
+            SelectedStructure = AvailableStructures.FirstOrDefault(x => x.Id == preferredId)
+                ?? AvailableStructures.FirstOrDefault();
+        }
+        finally
+        {
+            _isInitializingStructures = false;
+        }
+    }
+
+    partial void OnSelectedStructureChanged(Estructura? value)
+    {
+        if (!_isInitializingStructures && value != null)
+            _ = LoadSelectedStructureAsync();
+    }
+
+    private async Task LoadSelectedStructureAsync()
+    {
+        await _filterSemaphore.WaitAsync();
+        try
+        {
+            IsBusy = true;
+            if (SelectedStructure == null)
+            {
+                SetTransistors(Array.Empty<object>());
+                return;
+            }
+
+            var results = await _databaseService.GetFilteredTransistorsAsync(
+                _tableType.GetTableName(),
+                new Dictionary<string, double>(),
+                new Dictionary<string, double>(),
+                SelectedStructure.Id);
+            SetTransistors(results);
+        }
+        finally
+        {
+            IsBusy = false;
+            _filterSemaphore.Release();
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleFilters() => AreFiltersExpanded = !AreFiltersExpanded;
+
+    [RelayCommand]
+    private async Task ApplyFilters()
+    {
+        await _filterSemaphore.WaitAsync();
+        try
+        {
+            IsBusy = true;
+            if (SelectedStructure == null)
+            {
+                SetTransistors(Array.Empty<object>());
+                return;
+            }
+
+            var minimums = new Dictionary<string, double>();
+            var maximums = new Dictionary<string, double>();
+            foreach (var filter in FilterFields)
+            {
+                if (TryParseFilterValue(filter.MinValue, out double min) && min > 0)
+                    minimums[filter.Field] = min;
+                if (TryParseFilterValue(filter.MaxValue, out double max) && max < 9999)
+                    maximums[filter.Field] = max;
+            }
+
+            var results = await _databaseService.GetFilteredTransistorsAsync(
+                _tableType.GetTableName(), minimums, maximums, SelectedStructure.Id);
+            SetTransistors(results);
+        }
+        finally
+        {
+            IsBusy = false;
+            _filterSemaphore.Release();
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearFilters()
+    {
+        foreach (var filter in FilterFields)
+            filter.Clear();
+        await LoadSelectedStructureAsync();
+    }
+
+    [RelayCommand]
+    private Task New()
+    {
+        return _navigationService.NavigateToAsync(nameof(TransistorEditPage),
+            new Dictionary<string, object>
+            {
+                { "Type", _tableType.GetTableName() },
+                { "Mode", "New" }
+            });
+    }
+
+    [RelayCommand]
+    private async Task Import()
+    {
+        string option = await _dialogService.ShowActionSheetAsync(
+            "Importar transistores",
+            "Cancelar",
+            "Generar plantilla XLSX",
+            "Seleccionar archivo XLSX");
+
+        if (option == "Generar plantilla XLSX")
+            await GenerateTemplateAsync();
+        else if (option == "Seleccionar archivo XLSX")
+            await SelectAndImportAsync();
+    }
+
+    private async Task GenerateTemplateAsync()
+    {
+        try
+        {
+            IsBusy = true;
+            var structures = await _databaseService.GetAllEstructurasAsync();
+            var allowed = await _databaseService.GetAllowedStructureIdsForTableAsync(_tableType.GetTableName());
+            var caps = await _databaseService.GetAllEncapsuladosAsync();
+            using MemoryStream workbook = await _excelExportService.CreateImportTemplateAsync(
+                _tableType.GetTableName(), structures, allowed, caps);
+
+            string fileName = $"Plantilla_{_tableType.GetTableName()}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            SavedFileInfo saved = await _downloadFileService.SaveToDownloadsAsync(
+                fileName,
+                workbook,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+            await _dialogService.ShowAlertAsync(
+                "Plantilla generada",
+                $"Se guardó '{saved.FileName}' en {saved.DisplayLocation}. Complétela y luego use Importar → Seleccionar archivo XLSX.",
+                "OK");
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowAlertAsync("Error", $"No se pudo generar la plantilla: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SelectAndImportAsync()
+    {
+        try
+        {
+            var fileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                { DevicePlatform.WinUI, new[] { ".xlsx" } },
+                { DevicePlatform.Android, new[] { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } },
+                { DevicePlatform.iOS, new[] { "org.openxmlformats.spreadsheetml.sheet" } },
+                { DevicePlatform.macOS, new[] { "xlsx" } }
+            });
+
+            FileResult? file = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Seleccionar archivo XLSX",
+                FileTypes = fileTypes
+            });
+            if (file == null)
+                return;
+
+            IsBusy = true;
+            await using Stream input = await file.OpenReadAsync();
+            ImportResult result = await _excelImportService.ImportTransistorsAsync(
+                input,
+                _tableType.GetTableName());
+
+            using MemoryStream report = await _excelExportService.CreateImportReportAsync(
+                _tableType.GetTableName(), result);
+            string reportName = $"Informe_importacion_{_tableType.GetTableName()}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            SavedFileInfo savedReport = await _downloadFileService.SaveToDownloadsAsync(
+                reportName,
+                report,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+            await LoadAvailableStructuresAsync(SelectedStructure?.Id ?? 0);
+            await LoadSelectedStructureAsync();
+
+            await _dialogService.ShowAlertAsync(
+                "Importación terminada",
+                $"Importados: {result.ImportedRows}\nDuplicados: {result.DuplicateRows}\nCon errores: {result.ErrorRows}\n\nInforme: {savedReport.FileName} en {savedReport.DisplayLocation}.",
+                "OK");
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowAlertAsync("Error", $"No se pudo importar el archivo: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private Task SelectTransistor(TransistorRow row)
+    {
+        return _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
+            new Dictionary<string, object>
+            {
+                { "Type", _tableType.GetTableName() },
+                { "Id", row.Id }
+            });
+    }
+
+    private void SetTransistors(IEnumerable<object> items)
+    {
+        Transistors.Clear();
+        foreach (var item in items)
+            Transistors.Add(CreateRowFromObject(item));
+        TotalMatches = Transistors.Count;
+    }
+
+    private TransistorRow CreateRowFromObject(object item)
+    {
+        var row = new TransistorRow
+        {
+            Id = Convert.ToInt32(item.GetType().GetProperty("Id")?.GetValue(item) ?? 0),
+            Name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty,
+            Original = item
+        };
+
+        foreach (var property in _displayProperties)
+            row.Values.Add(FormatValue(property.GetValue(item)));
+        return row;
+    }
+
+    private static string FormatValue(object? value)
+    {
+        return value switch
+        {
+            null => string.Empty,
+            double number => number.ToString("0.####", CultureInfo.CurrentCulture),
+            float number => number.ToString("0.####", CultureInfo.CurrentCulture),
+            _ => value.ToString() ?? string.Empty
+        };
+    }
+
+    private static bool TryParseFilterValue(string? text, out double value)
+        => double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value) ||
+           double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 }

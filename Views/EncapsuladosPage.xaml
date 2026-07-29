@@ -1,96 +1,42 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
-             xmlns:models="clr-namespace:DbTransistorsApp.Models.Base" 
+             xmlns:models="clr-namespace:DbTransistorsApp.Models.Base"
              x:Class="DbTransistorsApp.Views.EncapsuladosPage"
              x:Name="ThisPage"
-             x:DataType="viewmodels:EncapsuladosViewModel"
              Title="{Binding Title}">
-
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
+            <CollectionView ItemsSource="{Binding Encapsulados}" Margin="10,8,10,85">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Encapsulado">
+                        <Border Margin="0,4" Padding="12" Stroke="#DDDDDD" BackgroundColor="White">
+                            <Grid ColumnDefinitions="64,*,Auto,Auto" ColumnSpacing="8">
+                                <Border WidthRequest="58" HeightRequest="58" Stroke="#DDDDDD" BackgroundColor="#F5F5F5">
+                                    <Image Source="{Binding ImagenPreview}" Aspect="AspectFit"/>
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="{Binding Id, StringFormat='ID {0}'}" FontSize="11" TextColor="#1565C0"/>
+                                    <Label Text="{Binding Nombre}" FontSize="16" FontAttributes="Bold"/>
+                                    <Label Text="{Binding Imagen}" FontSize="9" TextColor="Gray" LineBreakMode="TailTruncation"/>
+                                </VerticalStackLayout>
+                                <Button Grid.Column="2" Text="Editar" FontSize="11" Padding="9,5"
+                                        Command="{Binding BindingContext.EditEncapsuladoCommand, Source={x:Reference ThisPage}}"
+                                        CommandParameter="{Binding .}"/>
+                                <Button Grid.Column="3" Text="Eliminar" FontSize="11" Padding="9,5"
+                                        BackgroundColor="#C62828" TextColor="White"
+                                        Command="{Binding BindingContext.DeleteEncapsuladoCommand, Source={x:Reference ThisPage}}"
+                                        CommandParameter="{Binding .}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
 
-        <!-- Lista de encapsulados -->
-        <CollectionView Grid.Row="0"
-                        ItemsSource="{Binding Encapsulados}">
-
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:Encapsulado">
-                    <!-- ✅ AHORA SÍ FUNCIONA -->
-                    <Grid Padding="10" 
-                          ColumnDefinitions="*,Auto,Auto">
-
-                        <Grid Grid.Column="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- ✅ Border sin CornerRadius (no existe en MAUI) -->
-                            <Border Grid.Column="0" 
-                                    WidthRequest="40" 
-                                    HeightRequest="40"
-                                    StrokeThickness="0"
-                                    BackgroundColor="#E0E0E0"
-                                    Margin="0,0,10,0">
-
-                                <Image Source="{Binding ImagenPreview}" 
-                                       Aspect="AspectFit"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center"/>
-                            </Border>
-
-                            <Label Grid.Column="1" 
-                                   Text="{Binding Nombre}" 
-                                   FontSize="16"
-                                   VerticalOptions="Center"/>
-                        </Grid>
-
-                        <Button Grid.Column="1"
-                                Text="✏️"
-                                BackgroundColor="Transparent"
-                                TextColor="#2196F3"
-                                FontSize="18"
-                                Command="{Binding BindingContext.EditEncapsuladoCommand, Source={x:Reference ThisPage}}"
-                                CommandParameter="{Binding .}"
-                                VerticalOptions="Center"
-                                Margin="0,0,5,0"/>
-
-                        <Button Grid.Column="2"
-                                Text="🗑️"
-                                BackgroundColor="Transparent"
-                                TextColor="#F44336"
-                                FontSize="18"
-                                Command="{Binding BindingContext.DeleteEncapsuladoCommand, Source={x:Reference ThisPage}}"
-                                CommandParameter="{Binding .}"
-                                VerticalOptions="Center"/>
-                    </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-
-        <!-- Indicador de carga -->
-        <ActivityIndicator Grid.Row="0"
-                           IsRunning="{Binding IsBusy}"
-                           IsVisible="{Binding IsBusy}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center"/>
-
-        <!-- Botón flotante -->
-        <Button Grid.Row="0"
-                Text="➕"
-                BackgroundColor="#4CAF50"
-                TextColor="White"
-                FontSize="24"
-                WidthRequest="60"
-                HeightRequest="60"
-                CornerRadius="30"
-                HorizontalOptions="End"
-                VerticalOptions="End"
-                Margin="20"
+        <Button Text="＋" WidthRequest="60" HeightRequest="60" CornerRadius="30"
+                HorizontalOptions="End" VerticalOptions="End" Margin="20"
+                BackgroundColor="#2E7D32" TextColor="White" FontSize="25"
                 Command="{Binding NewEncapsuladoCommand}"/>
     </Grid>
 </ContentPage>

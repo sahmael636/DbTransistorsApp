@@ -12,24 +12,24 @@
         </Grid.RowDefinitions>
 
         <!-- Título -->
-        <Label Grid.Row="0" 
-               Text="{Binding Title}" 
-               TextColor="White" 
-               FontSize="18" 
+        <Label Grid.Row="0"
+               Text="{Binding PopupTitle}"
+               TextColor="White"
+               FontSize="18"
                FontAttributes="Bold"
                HorizontalOptions="Center"
                Margin="0,20,0,10"/>
 
         <!-- Imagen -->
-        <Image Grid.Row="1" 
-               Source="{Binding ImagePath}" 
+        <Image Grid.Row="1"
+               Source="{Binding ImagePath}"
                Aspect="AspectFit"
                HorizontalOptions="Center"
                VerticalOptions="Center"/>
 
         <!-- Botón de cierre -->
-        <Button Grid.Row="2" 
-                Text="Cerrar" 
+        <Button Grid.Row="2"
+                Text="Cerrar"
                 BackgroundColor="#2196F3"
                 TextColor="White"
                 FontSize="16"

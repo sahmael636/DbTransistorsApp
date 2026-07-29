@@ -1,4 +1,4 @@
-﻿// Services/DialogService.cs
+// Services/DialogService.cs
 using DbTransistorsApp.Views;
 using Microsoft.Maui.Controls;
 
@@ -19,6 +19,18 @@ namespace DbTransistorsApp.Services
         public async Task<string> ShowPromptAsync(string title, string message, string placeholder = "")
         {
             return await Application.Current.MainPage.DisplayPromptAsync(title, message, placeholder: placeholder);
+        }
+
+        public async Task<string> ShowActionSheetAsync(
+            string title,
+            string cancel,
+            params string[] buttons)
+        {
+            return await Application.Current!.MainPage!.DisplayActionSheet(
+                title,
+                cancel,
+                null,
+                buttons);
         }
 
         public async Task ShowToastAsync(string message)

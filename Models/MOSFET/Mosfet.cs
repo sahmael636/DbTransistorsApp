@@ -1,4 +1,4 @@
-﻿using SQLite;
+using SQLite;
 
 namespace DbTransistorsApp.Models.Base
 {
@@ -23,8 +23,8 @@ namespace DbTransistorsApp.Models.Base
     [Column("vgsth")]
     public double? Vgsth { get; set; }
 
-    //[Column("id")]
-    ///public double? Id { get; set; }
+    [Column("id")]
+    public double? CurrentId { get; set; }
 
     [Column("tj")]
     public double? Tj { get; set; }

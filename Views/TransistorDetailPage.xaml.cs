@@ -1,7 +1,4 @@
 using DbTransistorsApp.ViewModels;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -9,235 +6,165 @@ namespace DbTransistorsApp.Views;
 
 public partial class TransistorDetailPage : ContentPage, IQueryAttributable
 {
+    private const double NameColumnWidth = 150;
     private readonly TransistorDetailViewModel _viewModel;
-    private bool _replacementsHeaderBuilt = false;
+    private Task _initializationTask = Task.CompletedTask;
+    private bool _firstAppearance = true;
 
     public TransistorDetailPage(TransistorDetailViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
-        BindingContext = _viewModel;
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-    }
-
-    private void ViewModel_PropertyChanged(object sender,
-    PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(TransistorDetailViewModel.ReplacementHeaders))
-        {
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                BuildReplacementsHeader(_viewModel);
-            });
-        }
-    }
-
-    // Recibir parámetros de navegación cuando se usa Shell GoToAsync con parámetros
-    public void ApplyQueryAttributes(IDictionary<string, object> query)
-    {
-        try
-        {
-            if (BindingContext is TransistorDetailViewModel vm)
-            {
-                object typeObj = null;
-                object idObj = null;
-
-                if (!query.TryGetValue("type", out typeObj))
-                    query.TryGetValue("Type", out typeObj);
-
-                if (!query.TryGetValue("id", out idObj))
-                    query.TryGetValue("Id", out idObj);
-
-                if (typeObj != null && idObj != null && int.TryParse(idObj.ToString(), out int id))
-                {
-                    var type = typeObj.ToString();
-                    Debug.WriteLine($"ApplyQueryAttributes: type={type}, id={id}");
-                    // Ejecutar inicialización asíncrona en hilo de UI
-                    _ = MainThread.InvokeOnMainThreadAsync(async () => await vm.InitializeAsync(type, id));
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            // evitar que errores de navegación rompan la experiencia; mostrar alerta si es necesario
-            System.Diagnostics.Debug.WriteLine($"ApplyQueryAttributes error: {ex}");
-        }
+        BindingContext = viewModel;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
         try
         {
-            // ✅ Obtener parámetros de navegación
-            if (BindingContext is TransistorDetailViewModel vm)
-            {
-                // Verificar si el ViewModel ya tiene los datos
-                if (string.IsNullOrEmpty(vm.TransistorName))
-                {
-                    await vm.OnAppearingAsync();
-                }
-
-                // Construir encabezado de reemplazos si es necesario
-                if (!_replacementsHeaderBuilt && vm.ReplacementHeaders != null)
-                {
-                    BuildReplacementsHeader(vm);
-                    _replacementsHeaderBuilt = true;
-                }
-
-                // Construir ItemTemplate dinámico para Replacements
-                var coll = this.FindByName<CollectionView>("ReplacementsCollection");
-                if (coll != null && coll.ItemTemplate == null)
-                {
-                    BuildReplacementsItemTemplate();
-                }
-            }
+            await _initializationTask;
+            if (!_firstAppearance)
+                await _viewModel.OnAppearingAsync();
+            _firstAppearance = false;
+            BuildReplacementTable();
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Error al cargar: {ex.Message}", "OK");
+            await DisplayAlert("Error", ex.Message, "OK");
         }
     }
 
-    protected override async void OnDisappearing()
+    protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        await _viewModel.OnDisappearingAsync();
     }
 
-    private void BuildReplacementsHeader(TransistorDetailViewModel vm)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TransistorDetailViewModel.ReplacementHeaders) ||
+            e.PropertyName == nameof(TransistorDetailViewModel.ColumnWidth))
+        {
+            MainThread.BeginInvokeOnMainThread(BuildReplacementTable);
+        }
+    }
+
+    private void BuildReplacementTable()
+    {
+        if (_viewModel.ReplacementHeaders.Count == 0)
+            return;
+
+        ReplacementsHeader.ColumnDefinitions.Clear();
+        ReplacementsHeader.Children.Clear();
+        ReplacementsHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NameColumnWidth) });
+        ReplacementsHeader.Children.Add(CreateHeaderCell("Nombre", 0, NameColumnWidth));
+
+        for (int index = 0; index < _viewModel.ReplacementHeaders.Count; index++)
+        {
+            ReplacementsHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_viewModel.ColumnWidth) });
+            ReplacementsHeader.Children.Add(CreateHeaderCell(
+                _viewModel.ReplacementHeaders[index], index + 1, _viewModel.ColumnWidth));
+        }
+
+        int fieldCount = _viewModel.ReplacementHeaders.Count;
+        double columnWidth = _viewModel.ColumnWidth;
+        ReplacementsCollection.ItemTemplate = new DataTemplate(() =>
+        {
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NameColumnWidth) });
+            for (int index = 0; index < fieldCount; index++)
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(columnWidth) });
+
+            var tap = new TapGestureRecognizer();
+            tap.SetBinding(TapGestureRecognizer.CommandProperty,
+                new Binding("BindingContext.SelectReplacementCommand", source: this));
+            tap.SetBinding(TapGestureRecognizer.CommandParameterProperty, new Binding("."));
+            grid.GestureRecognizers.Add(tap);
+
+            grid.Children.Add(CreateDataCell("Name", 0, NameColumnWidth, FontAttributes.Bold));
+            for (int index = 0; index < fieldCount; index++)
+                grid.Children.Add(CreateDataCell($"Values[{index}]", index + 1, columnWidth));
+            return grid;
+        });
+    }
+
+    private static View CreateHeaderCell(string text, int column, double width)
+    {
+        var cell = new Border
+        {
+            WidthRequest = width,
+            Padding = new Thickness(4, 5),
+            Stroke = Colors.White.WithAlpha(0.18f),
+            StrokeThickness = 0.5,
+            Content = new Label
+            {
+                Text = text,
+                TextColor = Colors.White,
+                FontAttributes = FontAttributes.Bold,
+                FontSize = 11,
+                HorizontalTextAlignment = TextAlignment.Center,
+                VerticalTextAlignment = TextAlignment.Center,
+                LineBreakMode = LineBreakMode.WordWrap,
+                MaxLines = 2
+            }
+        };
+        Grid.SetColumn(cell, column);
+        return cell;
+    }
+
+    private static View CreateDataCell(
+        string bindingPath,
+        int column,
+        double width,
+        FontAttributes fontAttributes = FontAttributes.None)
+    {
+        var label = new Label
+        {
+            FontSize = 10,
+            FontAttributes = fontAttributes,
+            HorizontalTextAlignment = TextAlignment.Center,
+            VerticalTextAlignment = TextAlignment.Center,
+            TextColor = Colors.Black,
+            LineBreakMode = LineBreakMode.TailTruncation,
+            MaxLines = 1
+        };
+        label.SetBinding(Label.TextProperty, bindingPath);
+        var cell = new Border
+        {
+            WidthRequest = width,
+            MinimumHeightRequest = 36,
+            Padding = new Thickness(4, 7),
+            Stroke = Color.FromArgb("#E0E0E0"),
+            StrokeThickness = 0.5,
+            Content = label
+        };
+        Grid.SetColumn(cell, column);
+        return cell;
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         try
         {
-            var grid = this.FindByName<Grid>("ReplacementsHeader");
-            if (grid == null)
-                return;
+            query.TryGetValue("Type", out object? typeObj);
+            if (typeObj == null)
+                query.TryGetValue("type", out typeObj);
 
-            grid.ColumnDefinitions.Clear();
-            grid.Children.Clear();
+            query.TryGetValue("Id", out object? idObj);
+            if (idObj == null)
+                query.TryGetValue("id", out idObj);
 
-            // Columna fija Nombre
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-
-            var lblName = new Label { Text = "Nombre", FontAttributes = FontAttributes.Bold, TextColor = Colors.Black, VerticalOptions = LayoutOptions.Center };
-            grid.Add(lblName, 0, 0);
-
-            var stack = new HorizontalStackLayout
+            if (typeObj != null && int.TryParse(idObj?.ToString(), out int id))
             {
-                Spacing = 0,
-                HorizontalOptions = LayoutOptions.Fill,
-                VerticalOptions = LayoutOptions.Center
-            };
-            for (int i = 0; i < vm.ReplacementHeaders.Count; i++)
-            {
-                var border = new Border
-                {
-                    Padding = new Thickness(4, 0),
-                    StrokeThickness = 0,
-                    BackgroundColor = Colors.Transparent,
-                    WidthRequest = vm.ColumnWidth,
-                    HeightRequest = 40
-                };
-                var lbl = new Label { Text = vm.ReplacementHeaders[i], FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.Center };
-                border.Content = lbl;
-                stack.Add(border);
+                _firstAppearance = true;
+                _initializationTask = MainThread.InvokeOnMainThreadAsync(
+                    () => _viewModel.InitializeAsync(typeObj.ToString() ?? string.Empty, id));
             }
-            grid.Add(stack, 1, 0);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"BuildReplacementsHeader error: {ex}");
+            Debug.WriteLine($"TransistorDetailPage.ApplyQueryAttributes: {ex}");
         }
-    }
-
-    private void BuildReplacementsItemTemplate()
-    {
-        var collection = this.FindByName<CollectionView>("ReplacementsCollection");
-        if (collection == null) return;
-
-        var vm = (TransistorDetailViewModel)BindingContext;
-
-        collection.ItemTemplate = new DataTemplate(() =>
-        {
-            var grid = new Grid
-            {
-                Padding = new Thickness(5, 2),
-                BackgroundColor = Colors.Transparent
-            };
-
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-
-            var tap = new TapGestureRecognizer();
-            tap.SetBinding(
-                TapGestureRecognizer.CommandProperty,
-                new Binding("BindingContext.SelectTransistorCommand", source: this));
-
-            tap.SetBinding(
-                TapGestureRecognizer.CommandParameterProperty,
-                new Binding("Original"));
-
-            grid.GestureRecognizers.Add(tap);
-
-            var lblName = new Label
-            {
-                FontSize = 13,
-                VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.Center,
-                Padding = new Thickness(5, 6),
-                TextColor = Colors.Black
-            };
-
-            lblName.SetBinding(Label.TextProperty, "Name");
-
-            Grid.SetColumn(lblName, 0);
-
-            grid.Children.Add(lblName);
-
-            var stack = new HorizontalStackLayout
-            {
-                Spacing = 0,
-                HorizontalOptions = LayoutOptions.Fill,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            int max = ColumnLayoutHelper.MaxParameterCount;
-
-            for (int i = 0; i < max; i++)
-            {
-                var border = new Border
-                {
-                    Padding = new Thickness(4, 0),
-                    StrokeThickness = 0,
-                    BackgroundColor = Colors.Transparent,
-                    WidthRequest = vm.ColumnWidth,
-                    HeightRequest = 38
-                };
-
-                var lbl = new Label
-                {
-                    FontSize = 13,
-                    VerticalOptions = LayoutOptions.Center,
-                    HorizontalTextAlignment = TextAlignment.Center,
-                    VerticalTextAlignment = TextAlignment.Center,
-                    LineBreakMode = LineBreakMode.TailTruncation
-                };
-
-                lbl.SetBinding(Label.TextProperty,
-                    new Binding($"Values[{i}]"));
-
-                border.Content = lbl;
-
-                stack.Children.Add(border);
-            }
-
-            Grid.SetColumn(stack, 1);
-
-            grid.Children.Add(stack);
-
-            return grid;
-        });
     }
 }

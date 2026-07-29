@@ -1,166 +1,177 @@
-﻿// ViewModels/EncapsuladoEditViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DbTransistorsApp.Models.Base;
 using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
-//using IntelliJ.Lang.Annotations;
-//using static Android.Icu.Text.CaseMap;
 
-namespace DbTransistorsApp.ViewModels
+namespace DbTransistorsApp.ViewModels;
+
+public partial class EncapsuladoEditViewModel : BaseViewModel
 {
-    public partial class EncapsuladoEditViewModel : BaseViewModel
+    private readonly DatabaseService _databaseService;
+    private readonly NavigationService _navigationService;
+    private readonly DialogService _dialogService;
+    private readonly ImageStorageService _imageStorageService;
+    private Encapsulado? _original;
+    private FileResult? _selectedFile;
+    private string? _temporaryPreview;
+    private bool _isNew;
+
+    [ObservableProperty] private string _nombre = string.Empty;
+    [ObservableProperty] private string? _imagen;
+    [ObservableProperty] private string? _imagenPreview;
+
+    public EncapsuladoEditViewModel(
+        DatabaseService databaseService,
+        NavigationService navigationService,
+        DialogService dialogService,
+        ImageStorageService imageStorageService)
     {
-        private readonly DatabaseService _databaseService;
-        private readonly NavigationService _navigationService;
-        private readonly DialogService _dialogService;
-        private Encapsulado _originalEncapsulado;
-        private string _mode;
+        _databaseService = databaseService;
+        _navigationService = navigationService;
+        _dialogService = dialogService;
+        _imageStorageService = imageStorageService;
+    }
 
-        [ObservableProperty]
-        private string _nombre;
+    public async Task InitializeAsync(string mode, int id)
+    {
+        _isNew = !string.Equals(mode, "Edit", StringComparison.OrdinalIgnoreCase);
+        Title = _isNew ? "Nuevo encapsulado" : "Editar encapsulado";
+        _selectedFile = null;
+        DeleteTemporaryPreview();
 
-        [ObservableProperty]
-        private string _imagen;
-
-        [ObservableProperty]
-        private string _imagenPreview;
-
-        [ObservableProperty]
-        private bool _isNewMode;
-
-        [ObservableProperty]
-        private string _title;
-
-        public EncapsuladoEditViewModel(DatabaseService databaseService, NavigationService navigationService, DialogService dialogService)
+        if (_isNew)
         {
-            _databaseService = databaseService;
-            _navigationService = navigationService;
-            _dialogService = dialogService;
+            _original = null;
+            Nombre = string.Empty;
+            Imagen = null;
+            ImagenPreview = null;
+            return;
         }
 
-        public async Task InitializeAsync(string mode, Encapsulado encapsulado = null)
-        {
-            _mode = mode;
-            _isNewMode = mode == "New";
+        _original = await _databaseService.GetEncapsuladoByIdAsync(id)
+            ?? throw new InvalidOperationException("El encapsulado no existe.");
+        Nombre = _original.Nombre;
+        Imagen = _original.Imagen;
+        ImagenPreview = _imageStorageService.GetImagePath(_original.Imagen);
+    }
 
-            if (_isNewMode)
+    [RelayCommand]
+    private async Task SelectImage()
+    {
+        try
+        {
+            var types = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
             {
-                Title = "Nuevo Encapsulado";
-                Nombre = string.Empty;
-                Imagen = string.Empty;
+                [DevicePlatform.WinUI] = new[] { ".png", ".jpg", ".jpeg" },
+                [DevicePlatform.Android] = new[] { "image/png", "image/jpeg" },
+                [DevicePlatform.iOS] = new[] { "public.png", "public.jpeg" },
+                [DevicePlatform.macOS] = new[] { "png", "jpg", "jpeg" }
+            });
+            FileResult? file = await FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Seleccionar imagen del encapsulado",
+                FileTypes = types
+            });
+            if (file == null)
+                return;
+
+            _selectedFile = file;
+            Imagen = file.FileName;
+            DeleteTemporaryPreview();
+            _temporaryPreview = Path.Combine(FileSystem.CacheDirectory, $"cap_{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}");
+            await using Stream input = await file.OpenReadAsync();
+            await using FileStream output = File.Create(_temporaryPreview);
+            await input.CopyToAsync(output);
+            ImagenPreview = _temporaryPreview;
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowAlertAsync("Error", $"No se pudo seleccionar la imagen: {ex.Message}", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveImage()
+    {
+        _selectedFile = null;
+        Imagen = null;
+        ImagenPreview = null;
+        DeleteTemporaryPreview();
+        await Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task Save()
+    {
+        string name = Nombre.Trim();
+        if (name.Length == 0)
+        {
+            await _dialogService.ShowAlertAsync("Datos requeridos", "El nombre es obligatorio.", "OK");
+            return;
+        }
+
+        int id = _original?.Id ?? 0;
+        if (await _databaseService.EncapsuladoNameExistsAsync(name, id))
+        {
+            await _dialogService.ShowAlertAsync(
+                "Nombre duplicado",
+                "Ya existe un encapsulado con ese nombre.",
+                "OK");
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            string? storedImage = _original?.Imagen;
+            if (_selectedFile != null)
+                storedImage = await _imageStorageService.SaveImageAsync(_selectedFile, _original?.Imagen);
+            else if (string.IsNullOrWhiteSpace(Imagen))
+            {
+                _imageStorageService.DeleteImage(_original?.Imagen);
+                storedImage = null;
+            }
+
+            if (_isNew)
+            {
+                await _databaseService.InsertEncapsuladoAsync(new Encapsulado
+                {
+                    Nombre = name,
+                    Imagen = storedImage
+                });
             }
             else
             {
-                Title = $"Editar Encapsulado";
-                _originalEncapsulado = encapsulado;
-                Nombre = encapsulado.Nombre;
-                Imagen = encapsulado.Imagen;
-                ImagenPreview = GetImagePreview(encapsulado.Imagen);
-            }
-        }
-
-        [RelayCommand]
-        private async Task SelectImage()
-        {
-            try
-            {
-                var options = new PickOptions
-                {
-                    PickerTitle = "Seleccionar imagen del encapsulado",
-                    FileTypes = new FilePickerFileType(
-                        new Dictionary<DevicePlatform, IEnumerable<string>>
-                        {
-                            { DevicePlatform.WinUI, new[] { ".png", ".jpg", ".jpeg", ".gif" } },
-                            { DevicePlatform.macOS, new[] { "png", "jpg", "jpeg", "gif" } },
-                            { DevicePlatform.Android, new[] { "image/png", "image/jpeg", "image/gif" } },
-                            { DevicePlatform.iOS, new[] { "public.png", "public.jpeg", "public.gif" } },
-                        })
-                };
-
-                var file = await FilePicker.PickAsync(options);
-                if (file != null)
-                {
-                    // Guardar la imagen en la carpeta de recursos
-                    string fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                    string targetPath = Path.Combine(FileSystem.AppDataDirectory, "Images", "Packages", fileName);
-
-                    // Crear directorio si no existe
-                    Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
-
-                    // Copiar el archivo
-                    using var sourceStream = await file.OpenReadAsync();
-                    using var targetStream = File.Create(targetPath);
-                    await sourceStream.CopyToAsync(targetStream);
-
-                    Imagen = fileName;
-                    ImagenPreview = GetImagePreview(fileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                await _dialogService.ShowAlertAsync("Error", $"Error al seleccionar la imagen: {ex.Message}", "OK");
-            }
-        }
-
-        [RelayCommand]
-        private async Task Save()
-        {
-            if (string.IsNullOrWhiteSpace(Nombre))
-            {
-                await _dialogService.ShowAlertAsync("Error", "El nombre del encapsulado es obligatorio", "OK");
-                return;
+                _original!.Nombre = name;
+                _original.Imagen = storedImage;
+                await _databaseService.UpdateEncapsuladoAsync(_original);
             }
 
-            try
-            {
-                IsBusy = true;
-
-                if (_isNewMode)
-                {
-                    var nuevo = new Encapsulado
-                    {
-                        Nombre = Nombre,
-                        Imagen = Imagen
-                    };
-                    await _databaseService.InsertEncapsuladoAsync(nuevo);
-                }
-                else
-                {
-                    _originalEncapsulado.Nombre = Nombre;
-                    _originalEncapsulado.Imagen = Imagen;
-                    await _databaseService.UpdateEncapsuladoAsync(_originalEncapsulado);
-                }
-
-                await _navigationService.NavigateBackAsync();
-                await _dialogService.ShowToastAsync("Encapsulado guardado correctamente");
-            }
-            catch (Exception ex)
-            {
-                await _dialogService.ShowAlertAsync("Error", $"Error al guardar: {ex.Message}", "OK");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-        }
-
-        [RelayCommand]
-        private async Task Cancel()
-        {
+            DeleteTemporaryPreview();
             await _navigationService.NavigateBackAsync();
         }
-
-        private string GetImagePreview(string imageName)
+        catch (Exception ex)
         {
-            if (string.IsNullOrEmpty(imageName))
-                return string.Empty;
-
-            string imagePath = Path.Combine(FileSystem.AppDataDirectory, "Images", "Packages", imageName);
-            if (File.Exists(imagePath))
-                return imagePath;
-
-            return string.Empty;
+            await _dialogService.ShowAlertAsync("No se pudo guardar", ex.Message, "OK");
         }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task Cancel()
+    {
+        DeleteTemporaryPreview();
+        await _navigationService.NavigateBackAsync();
+    }
+
+    private void DeleteTemporaryPreview()
+    {
+        if (!string.IsNullOrWhiteSpace(_temporaryPreview) && File.Exists(_temporaryPreview))
+            File.Delete(_temporaryPreview);
+        _temporaryPreview = null;
     }
 }

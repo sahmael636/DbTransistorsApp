@@ -154,6 +154,13 @@
                         TextColor="White"
                         FontSize="14"
                         Command="{Binding NavigateToEstructurasCommand}"/>
+
+                <Button Grid.Row="6" Grid.Column="1"
+                        Text="📤 Exportar BBDD"
+                        BackgroundColor="#00796B"
+                        TextColor="White"
+                        FontSize="14"
+                        Command="{Binding ExportDatabaseCommand}"/>
             </Grid>
         </ScrollView>
     </Grid>

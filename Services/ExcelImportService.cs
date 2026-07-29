@@ -1,137 +1,251 @@
-﻿// Services/ExcelImportService.cs
-using DbTransistorsApp.Helpers;
-using ExcelDataReader;
-using System.Text;
+using DbTransistorsApp.Models.Base;
+using NPOI.SS.UserModel;
+using System.Globalization;
+using System.Reflection;
 
-namespace DbTransistorsApp.Services
+namespace DbTransistorsApp.Services;
+
+public class ExcelImportService
 {
-    public class ExcelImportService
+    private readonly DatabaseService _databaseService;
+
+    public ExcelImportService(DatabaseService databaseService)
     {
-        public async Task<List<Dictionary<string, object>>> ImportFromExcelAsync(
-            string filePath,
-            string tableName,
-            IProgress<int> progress = null)
+        _databaseService = databaseService;
+    }
+
+    public async Task<ImportResult> ImportTransistorsAsync(
+        Stream input,
+        string tableName,
+        CancellationToken cancellationToken = default)
+    {
+        string table = TransistorMetadata.NormalizeTableName(tableName);
+        if (input.CanSeek)
+            input.Position = 0;
+
+        IWorkbook workbook = WorkbookFactory.Create(input);
+        try
         {
-            var results = new List<Dictionary<string, object>>();
-            var errors = new List<string>();
+            ISheet sheet = FindTransistorSheet(workbook)
+                ?? throw new InvalidDataException("El archivo no contiene una hoja llamada 'Transistores'.");
 
-            try
+            IRow? headerRow = sheet.GetRow(sheet.FirstRowNum);
+            if (headerRow == null)
+                throw new InvalidDataException("La hoja Transistores no contiene encabezados.");
+
+            var headers = ReadHeaders(headerRow);
+            if (!headers.ContainsKey("name") || !headers.ContainsKey("struct_id"))
+                throw new InvalidDataException("La plantilla debe contener las columnas name y struct_id.");
+
+            var metadataColumns = TransistorMetadata.GetImportColumns(table);
+
+            HashSet<string> existingNames = await _databaseService.GetAllTransistorNamesAsync();
+            HashSet<int> allowedStructures = await _databaseService.GetAllowedStructureIdsForTableAsync(table);
+            HashSet<int> allStructures = (await _databaseService.GetAllEstructurasAsync()).Select(x => x.Id).ToHashSet();
+            HashSet<int> validCaps = (await _databaseService.GetAllEncapsuladosAsync()).Select(x => x.Id).ToHashSet();
+
+            var result = new ImportResult();
+            var formatter = new DataFormatter(CultureInfo.InvariantCulture);
+
+            for (int rowIndex = headerRow.RowNum + 1; rowIndex <= sheet.LastRowNum; rowIndex++)
             {
-                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                cancellationToken.ThrowIfCancellationRequested();
+                IRow? row = sheet.GetRow(rowIndex);
+                if (row == null || IsEmptyRow(row, headers.Values, formatter))
+                    continue;
 
-                using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read);
-                using var reader = ExcelReaderFactory.CreateReader(stream);
+                result.ProcessedRows++;
+                int excelRow = rowIndex + 1;
+                string name = GetCellText(row, headers["name"], formatter).Trim();
 
-                var conf = new ExcelDataSetConfiguration
+                if (string.IsNullOrWhiteSpace(name))
                 {
-                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
-                    {
-                        UseHeaderRow = true
-                    }
-                };
-
-                var dataSet = reader.AsDataSet(conf);
-                var dataTable = dataSet.Tables[0];
-
-                // Obtener los nombres de las columnas
-                var columnNames = new List<string>();
-                for (int i = 0; i < dataTable.Columns.Count; i++)
-                {
-                    columnNames.Add(dataTable.Columns[i].ColumnName.ToLower());
+                    AddValidationIssue(result, excelRow, string.Empty, "El nombre es obligatorio.");
+                    continue;
                 }
 
-                // Obtener las propiedades del modelo
-                var modelType = GetModelType(tableName);
-                var properties = modelType.GetProperties()
-                    .Where(p => p.Name != "Id" && p.Name != "CapsIds" && p.Name != "StructId")
-                    .ToList();
-
-                // Procesar filas
-                int totalRows = dataTable.Rows.Count;
-                int processedRows = 0;
-
-                foreach (System.Data.DataRow row in dataTable.Rows)
+                if (existingNames.Contains(name))
                 {
-                    try
+                    result.DuplicateRows++;
+                    result.Issues.Add(new ImportIssue(
+                        excelRow,
+                        name,
+                        ImportIssueKind.Duplicate,
+                        "El nombre ya existe en la base de datos o se repite dentro del archivo."));
+                    continue;
+                }
+
+                string structText = GetCellText(row, headers["struct_id"], formatter).Trim();
+                if (!TryParseInt(structText, out int structId) || !allStructures.Contains(structId))
+                {
+                    AddValidationIssue(result, excelRow, name, "struct_id no corresponde a una estructura existente.");
+                    continue;
+                }
+
+                if (!allowedStructures.Contains(structId))
+                {
+                    AddValidationIssue(result, excelRow, name, "La estructura indicada no está permitida para esta tabla.");
+                    continue;
+                }
+
+                ITransistor transistor = (ITransistor)Activator.CreateInstance(TransistorMetadata.GetModelType(table))!;
+                transistor.Name = name;
+                transistor.StructId = structId;
+
+                bool rowIsValid = true;
+                foreach (var metadata in metadataColumns)
+                {
+                    if (metadata.ColumnName.Equals("name", StringComparison.OrdinalIgnoreCase) ||
+                        metadata.ColumnName.Equals("struct_id", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (!headers.TryGetValue(metadata.ColumnName, out int columnIndex))
+                        continue;
+
+                    string text = GetCellText(row, columnIndex, formatter).Trim();
+                    if (string.IsNullOrWhiteSpace(text))
+                        continue;
+
+                    PropertyInfo property = TransistorMetadata.GetModelType(table).GetProperty(metadata.PropertyName)!;
+                    Type underlying = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
+                    if (underlying == typeof(string))
                     {
-                        var rowData = new Dictionary<string, object>();
-                        bool hasValidData = false;
-
-                        // Verificar cada campo
-                        foreach (var prop in properties)
-                        {
-                            if (columnNames.Contains(prop.Name.ToLower()))
-                            {
-                                var value = row[prop.Name.ToLower()];
-                                if (value != null && value != DBNull.Value)
-                                {
-                                    // Validar valor según el tipo
-                                    if (prop.PropertyType == typeof(string))
-                                    {
-                                        var stringValue = value.ToString().Trim();
-                                        if (!string.IsNullOrEmpty(stringValue))
-                                        {
-                                            rowData[prop.Name] = stringValue;
-                                            hasValidData = true;
-                                        }
-                                    }
-                                    else if (prop.PropertyType.IsNumericType())
-                                    {
-                                        if (double.TryParse(value.ToString(), out double numericValue))
-                                        {
-                                            rowData[prop.Name] = numericValue;
-                                            hasValidData = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Guardar solo si tiene datos válidos
-                        if (hasValidData)
-                        {
-                            results.Add(rowData);
-                        }
-
-                        processedRows++;
-                        progress?.Report((processedRows * 100) / totalRows);
+                        property.SetValue(transistor, text);
                     }
-                    catch (Exception ex)
+                    else if (underlying == typeof(double))
                     {
-                        errors.Add($"Error en fila {processedRows + 1}: {ex.Message}");
+                        if (!TryParseDouble(text, out double value))
+                        {
+                            AddValidationIssue(result, excelRow, name, $"El valor '{text}' de {metadata.ColumnName} no es numérico.");
+                            rowIsValid = false;
+                            break;
+                        }
+                        property.SetValue(transistor, value);
+                    }
+                    else if (underlying == typeof(int))
+                    {
+                        if (!TryParseInt(text, out int value))
+                        {
+                            AddValidationIssue(result, excelRow, name, $"El valor '{text}' de {metadata.ColumnName} no es entero.");
+                            rowIsValid = false;
+                            break;
+                        }
+                        property.SetValue(transistor, value);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error al importar: {ex.Message}");
+
+                if (!rowIsValid)
+                    continue;
+
+                if (headers.TryGetValue("caps_ids", out int capsColumn))
+                {
+                    string capsText = GetCellText(row, capsColumn, formatter).Trim();
+                    if (!string.IsNullOrWhiteSpace(capsText))
+                    {
+                        var parsedCaps = ParseCapsIds(capsText);
+                        if (parsedCaps == null || parsedCaps.Any(id => !validCaps.Contains(id)))
+                        {
+                            AddValidationIssue(result, excelRow, name, "caps_ids contiene identificadores inexistentes o un formato no válido.");
+                            continue;
+                        }
+                        transistor.CapsIds = parsedCaps;
+                    }
+                }
+
+                try
+                {
+                    await _databaseService.InsertTransistorAsync(table, transistor);
+                    existingNames.Add(name);
+                    result.ImportedRows++;
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("existe", StringComparison.OrdinalIgnoreCase))
+                {
+                    result.DuplicateRows++;
+                    result.Issues.Add(new ImportIssue(excelRow, name, ImportIssueKind.Duplicate, ex.Message));
+                }
+                catch (Exception ex)
+                {
+                    result.ErrorRows++;
+                    result.Issues.Add(new ImportIssue(excelRow, name, ImportIssueKind.Database, ex.Message));
+                }
             }
 
-            if (errors.Any())
-            {
-                // Log de errores
-                Console.WriteLine($"Errores de importación: {string.Join("\n", errors)}");
-            }
-
-            return results;
+            return result;
         }
-
-        private Type GetModelType(string tableName)
+        finally
         {
-            return tableName switch
-            {
-                "bjtge" => typeof(BjtGe),
-                "bjtsi" => typeof(BjtSi),
-                "bjtprebias" => typeof(BjtPrebias),
-                "bjtprebiasdual" => typeof(BjtPrebiasDual),
-                "bjtsidual" => typeof(BjtSiDual),
-                "jfet" => typeof(Jfet),
-                "mosfet" => typeof(Mosfet),
-                "mosfetdual" => typeof(MosfetDual),
-                "igbt" => typeof(Igbt),
-                "igbtdual" => typeof(IgbtDual),
-                _ => throw new ArgumentException($"Tabla no válida: {tableName}")
-            };
+            workbook.Close();
         }
+    }
+
+    private static ISheet? FindTransistorSheet(IWorkbook workbook)
+    {
+        for (int i = 0; i < workbook.NumberOfSheets; i++)
+        {
+            ISheet sheet = workbook.GetSheetAt(i);
+            if (sheet.SheetName.Equals("Transistores", StringComparison.OrdinalIgnoreCase))
+                return sheet;
+        }
+        return workbook.NumberOfSheets > 0 ? workbook.GetSheetAt(0) : null;
+    }
+
+    private static Dictionary<string, int> ReadHeaders(IRow row)
+    {
+        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int col = row.FirstCellNum; col < row.LastCellNum; col++)
+        {
+            string value = row.GetCell(col)?.ToString()?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(value) && !headers.ContainsKey(value))
+                headers[value] = col;
+        }
+        return headers;
+    }
+
+    private static bool IsEmptyRow(IRow row, IEnumerable<int> columns, DataFormatter formatter)
+        => columns.All(col => string.IsNullOrWhiteSpace(GetCellText(row, col, formatter)));
+
+    private static string GetCellText(IRow row, int column, DataFormatter formatter)
+    {
+        ICell? cell = row.GetCell(column, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+        if (cell == null)
+            return string.Empty;
+        return formatter.FormatCellValue(cell) ?? string.Empty;
+    }
+
+    private static bool TryParseDouble(string text, out double value)
+        => double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value) ||
+           double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+
+    private static bool TryParseInt(string text, out int value)
+    {
+        if (int.TryParse(text, NumberStyles.Integer, CultureInfo.CurrentCulture, out value) ||
+            int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+            return true;
+
+        if (TryParseDouble(text, out double number) && Math.Abs(number % 1) < 0.000001)
+        {
+            value = Convert.ToInt32(number);
+            return true;
+        }
+        return false;
+    }
+
+    private static List<int>? ParseCapsIds(string text)
+    {
+        var ids = new List<int>();
+        foreach (string part in text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!TryParseInt(part.Trim(), out int id) || id <= 0)
+                return null;
+            ids.Add(id);
+        }
+        return ids.Distinct().ToList();
+    }
+
+    private static void AddValidationIssue(ImportResult result, int row, string name, string message)
+    {
+        result.ErrorRows++;
+        result.Issues.Add(new ImportIssue(row, name, ImportIssueKind.Validation, message));
     }
 }

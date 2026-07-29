@@ -5,68 +5,36 @@
              xmlns:models="clr-namespace:DbTransistorsApp.Models.Base"
              x:Class="DbTransistorsApp.Views.EstructurasPage"
              x:Name="ThisPage"
-             x:DataType="viewmodels:EstructurasViewModel"
-             Title="{Binding Title}"
-             IsBusy="{Binding IsBusy}">
-
+             Title="{Binding Title}">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- Lista de estructuras -->
-        <RefreshView Grid.Row="0"
-                     IsRefreshing="{Binding IsBusy}"
-                     Command="{Binding RefreshCommand}">
-            <CollectionView ItemsSource="{Binding Estructuras}">
-
+        <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
+            <CollectionView ItemsSource="{Binding Estructuras}" Margin="10,8,10,85">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:Estructura">
-                        <Grid Padding="10" 
-                              ColumnDefinitions="*,Auto,Auto"
-                              BackgroundColor="{Binding BackgroundColor}">
-
-                            <Label Grid.Column="0" 
-                                   Text="{Binding Nombre}" 
-                                   FontSize="16"
-                                   VerticalOptions="Center"/>
-
-                            <Button Grid.Column="1"
-                                    Text="✏️"
-                                    BackgroundColor="Transparent"
-                                    TextColor="#2196F3"
-                                    FontSize="18"
-                                    Command="{Binding BindingContext.EditEstructuraCommand, Source={x:Reference ThisPage}}"
-                                    CommandParameter="{Binding .}"
-                                    VerticalOptions="Center"
-                                    Margin="0,0,5,0"/>
-
-                            <Button Grid.Column="2"
-                                    Text="🗑️"
-                                    BackgroundColor="Transparent"
-                                    TextColor="#F44336"
-                                    FontSize="18"
-                                    Command="{Binding BindingContext.DeleteEstructuraCommand, Source={x:Reference ThisPage}}"
-                                    CommandParameter="{Binding .}"
-                                    VerticalOptions="Center"/>
-                        </Grid>
+                        <Border Margin="0,4" Padding="14" Stroke="#DDDDDD" BackgroundColor="White">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                                <Border Padding="8,4" BackgroundColor="#E3F2FD" StrokeThickness="0">
+                                    <Label Text="{Binding Id, StringFormat='ID {0}'}" FontAttributes="Bold" TextColor="#1565C0"/>
+                                </Border>
+                                <Label Grid.Column="1" Text="{Binding Nombre}" FontSize="17" FontAttributes="Bold"
+                                       VerticalOptions="Center"/>
+                                <Button Grid.Column="2" Text="Editar" FontSize="11" Padding="9,5"
+                                        Command="{Binding BindingContext.EditEstructuraCommand, Source={x:Reference ThisPage}}"
+                                        CommandParameter="{Binding .}"/>
+                                <Button Grid.Column="3" Text="Eliminar" FontSize="11" Padding="9,5"
+                                        BackgroundColor="#C62828" TextColor="White"
+                                        Command="{Binding BindingContext.DeleteEstructuraCommand, Source={x:Reference ThisPage}}"
+                                        CommandParameter="{Binding .}"/>
+                            </Grid>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
 
-        <!-- Botón flotante -->
-        <Button Grid.Row="0"
-                Text="➕"
-                BackgroundColor="#4CAF50"
-                TextColor="White"
-                FontSize="24"
-                WidthRequest="60"
-                HeightRequest="60"
-                CornerRadius="30"
-                HorizontalOptions="End"
-                VerticalOptions="End"
-                Margin="20"
+        <Button Text="＋" WidthRequest="60" HeightRequest="60" CornerRadius="30"
+                HorizontalOptions="End" VerticalOptions="End" Margin="20"
+                BackgroundColor="#2E7D32" TextColor="White" FontSize="25"
                 Command="{Binding NewEstructuraCommand}"/>
     </Grid>
 </ContentPage>

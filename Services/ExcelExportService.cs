@@ -4,8 +4,8 @@ using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
 using NPOI.XSSF.Streaming;
-using VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment;
 using HorizontalAlignment = NPOI.SS.UserModel.HorizontalAlignment;
+using VerticalAlignment = NPOI.SS.UserModel.VerticalAlignment;
 using IFont = NPOI.SS.UserModel.IFont;
 
 namespace DbTransistorsApp.Services;

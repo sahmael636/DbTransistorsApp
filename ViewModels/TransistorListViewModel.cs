@@ -25,6 +25,9 @@ public partial class TransistorListViewModel : BaseViewModel
     private List<PropertyInfo> _displayProperties = new();
     private bool _isInitializingStructures;
     private bool _initialized;
+    private readonly Dictionary<string, double> _activeMinimums = new();
+    private readonly Dictionary<string, double> _activeMaximums = new();
+    private int _pageSize;
 
     public class TransistorRow
     {
@@ -51,6 +54,31 @@ public partial class TransistorListViewModel : BaseViewModel
 
     [ObservableProperty]
     private int _totalMatches;
+
+    [ObservableProperty]
+    private int _loadedMatches;
+
+    [ObservableProperty]
+    private bool _hasMoreResults;
+
+    [ObservableProperty]
+    private bool _isLoadingMore;
+
+    public string ResultsSummary => TotalMatches == 0
+        ? "Sin coincidencias"
+        : $"Mostrando {LoadedMatches:N0} de {TotalMatches:N0}";
+
+    partial void OnTotalMatchesChanged(int value)
+    {
+        HasMoreResults = LoadedMatches < value;
+        OnPropertyChanged(nameof(ResultsSummary));
+    }
+
+    partial void OnLoadedMatchesChanged(int value)
+    {
+        HasMoreResults = value < TotalMatches;
+        OnPropertyChanged(nameof(ResultsSummary));
+    }
 
     [ObservableProperty]
     private ObservableCollection<string> _headerFields = new();
@@ -86,6 +114,7 @@ public partial class TransistorListViewModel : BaseViewModel
         _excelImportService = excelImportService;
         _downloadFileService = downloadFileService;
         AreFiltersExpanded = DeviceInfo.Idiom != DeviceIdiom.Phone;
+        _pageSize = DeviceInfo.Idiom == DeviceIdiom.Phone ? 75 : 200;
     }
 
     public async Task InitializeAsync(TableType tableType)
@@ -204,22 +233,31 @@ public partial class TransistorListViewModel : BaseViewModel
 
     private async Task LoadSelectedStructureAsync()
     {
+        _activeMinimums.Clear();
+        _activeMaximums.Clear();
+        await ReloadResultsAsync();
+    }
+
+    private async Task ReloadResultsAsync()
+    {
         await _filterSemaphore.WaitAsync();
         try
         {
             IsBusy = true;
             if (SelectedStructure == null)
             {
-                SetTransistors(Array.Empty<object>());
+                SetTransistors(Array.Empty<object>(), 0);
                 return;
             }
 
-            var results = await _databaseService.GetFilteredTransistorsAsync(
+            PagedResult<object> page = await _databaseService.GetFilteredTransistorPageAsync(
                 _tableType.GetTableName(),
-                new Dictionary<string, double>(),
-                new Dictionary<string, double>(),
-                SelectedStructure.Id);
-            SetTransistors(results);
+                _activeMinimums,
+                _activeMaximums,
+                SelectedStructure.Id,
+                _pageSize,
+                0);
+            SetTransistors(page.Items, page.TotalCount);
         }
         finally
         {
@@ -234,35 +272,18 @@ public partial class TransistorListViewModel : BaseViewModel
     [RelayCommand]
     private async Task ApplyFilters()
     {
-        await _filterSemaphore.WaitAsync();
-        try
-        {
-            IsBusy = true;
-            if (SelectedStructure == null)
-            {
-                SetTransistors(Array.Empty<object>());
-                return;
-            }
+        _activeMinimums.Clear();
+        _activeMaximums.Clear();
 
-            var minimums = new Dictionary<string, double>();
-            var maximums = new Dictionary<string, double>();
-            foreach (var filter in FilterFields)
-            {
-                if (TryParseFilterValue(filter.MinValue, out double min) && min > 0)
-                    minimums[filter.Field] = min;
-                if (TryParseFilterValue(filter.MaxValue, out double max) && max < 9999)
-                    maximums[filter.Field] = max;
-            }
-
-            var results = await _databaseService.GetFilteredTransistorsAsync(
-                _tableType.GetTableName(), minimums, maximums, SelectedStructure.Id);
-            SetTransistors(results);
-        }
-        finally
+        foreach (var filter in FilterFields)
         {
-            IsBusy = false;
-            _filterSemaphore.Release();
+            if (TryParseFilterValue(filter.MinValue, out double min) && min > 0)
+                _activeMinimums[filter.Field] = min;
+            if (TryParseFilterValue(filter.MaxValue, out double max) && max < 9999)
+                _activeMaximums[filter.Field] = max;
         }
+
+        await ReloadResultsAsync();
     }
 
     [RelayCommand]
@@ -384,6 +405,33 @@ public partial class TransistorListViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private async Task LoadMore()
+    {
+        if (IsBusy || IsLoadingMore || !HasMoreResults || SelectedStructure == null)
+            return;
+
+        await _filterSemaphore.WaitAsync();
+        try
+        {
+            IsLoadingMore = true;
+            PagedResult<object> page = await _databaseService.GetFilteredTransistorPageAsync(
+                _tableType.GetTableName(),
+                _activeMinimums,
+                _activeMaximums,
+                SelectedStructure.Id,
+                _pageSize,
+                Transistors.Count);
+
+            AppendTransistors(page.Items, page.TotalCount);
+        }
+        finally
+        {
+            IsLoadingMore = false;
+            _filterSemaphore.Release();
+        }
+    }
+
+    [RelayCommand]
     private Task SelectTransistor(TransistorRow row)
     {
         return _navigationService.NavigateToAsync(nameof(TransistorDetailPage),
@@ -394,12 +442,21 @@ public partial class TransistorListViewModel : BaseViewModel
             });
     }
 
-    private void SetTransistors(IEnumerable<object> items)
+    private void SetTransistors(IEnumerable<object> items, int totalCount)
     {
         Transistors.Clear();
         foreach (var item in items)
             Transistors.Add(CreateRowFromObject(item));
-        TotalMatches = Transistors.Count;
+        TotalMatches = totalCount;
+        LoadedMatches = Transistors.Count;
+    }
+
+    private void AppendTransistors(IEnumerable<object> items, int totalCount)
+    {
+        foreach (var item in items)
+            Transistors.Add(CreateRowFromObject(item));
+        TotalMatches = totalCount;
+        LoadedMatches = Transistors.Count;
     }
 
     private TransistorRow CreateRowFromObject(object item)

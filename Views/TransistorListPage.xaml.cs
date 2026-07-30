@@ -10,6 +10,7 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
     private readonly TransistorListViewModel _viewModel;
     private Task _initializationTask = Task.CompletedTask;
     private bool _tableBuilt;
+    private bool _firstAppearance = true;
 
     public TransistorListPage(TransistorListViewModel viewModel)
     {
@@ -22,7 +23,9 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
     {
         base.OnAppearing();
         await _initializationTask;
-        await _viewModel.OnAppearingAsync();
+        if (!_firstAppearance)
+            await _viewModel.OnAppearingAsync();
+        _firstAppearance = false;
         BuildTable();
     }
 
@@ -156,6 +159,7 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
                 if (!string.IsNullOrWhiteSpace(value) && Enum.TryParse(value, true, out TableType tableType))
                 {
                     _tableBuilt = false;
+                    _firstAppearance = true;
                     _initializationTask = MainThread.InvokeOnMainThreadAsync(
                         () => _viewModel.InitializeAsync(tableType));
                 }

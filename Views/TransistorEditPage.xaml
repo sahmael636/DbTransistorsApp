@@ -64,23 +64,17 @@
                 </CollectionView>
 
                 <Label Text="Encapsulados (opcionales)" FontSize="16" FontAttributes="Bold" Margin="0,8,0,0"/>
-                <FlexLayout BindableLayout.ItemsSource="{Binding AllEncapsulados}"
-                            Direction="Row" Wrap="Wrap">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="models:Encapsulado">
-                            <Border Margin="0,0,8,8" Padding="11,7"
-                                    Stroke="{Binding BorderColor}"
-                                    BackgroundColor="{Binding BackgroundColor}">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding BindingContext.ToggleEncapsuladoCommand, Source={x:Reference ThisPage}}"
-                                        CommandParameter="{Binding .}"/>
-                                </Border.GestureRecognizers>
-                                <Label Text="{Binding Nombre}" FontSize="12"/>
-                            </Border>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </FlexLayout>
+                <Border Padding="12" Stroke="#D0D0D0" BackgroundColor="#FAFAFA">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Use el buscador con selección múltiple. La lista completa no se carga como botones."
+                               FontSize="11" TextColor="Gray"/>
+                        <Button Text="{Binding EncapsuladosButtonText}"
+                                Command="{Binding SelectEncapsuladosCommand}"
+                                BackgroundColor="#455A64" TextColor="White"/>
+                        <Label Text="{Binding SelectedEncapsuladosSummary}"
+                               FontSize="12" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
 

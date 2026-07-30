@@ -12,7 +12,7 @@
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
         <Border Grid.Row="0"
                 Margin="8,6,8,2"
                 Padding="0"
@@ -84,7 +84,7 @@
         </Border>
 
         <Grid Grid.Row="1" Padding="10,5" BackgroundColor="#E3F2FD" ColumnDefinitions="*,Auto">
-            <Label Text="{Binding TotalMatches, StringFormat='Total: {0} transistores'}"
+            <Label Text="{Binding ResultsSummary}"
                    FontSize="13" FontAttributes="Bold"/>
             <Label Grid.Column="1" Text="{Binding TableDisplayName}" FontSize="11" TextColor="Gray"/>
         </Grid>
@@ -109,7 +109,21 @@
                                VerticalOptions="Center"/>
         </Grid>
 
-        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="10"
+        <Grid Grid.Row="3" Padding="10,5" IsVisible="{Binding HasMoreResults}"
+              ColumnDefinitions="*,Auto" BackgroundColor="#F5F5F5">
+            <Label Text="La lista se carga por bloques para mantener la aplicación fluida."
+                   FontSize="10" TextColor="Gray" VerticalOptions="Center"/>
+            <Grid Grid.Column="1">
+                <Button Text="Cargar más" Command="{Binding LoadMoreCommand}"
+                        IsVisible="{Binding IsLoadingMore, Converter={StaticResource InverseBoolConverter}}"
+                        Padding="14,6" FontSize="12"
+                        BackgroundColor="#455A64" TextColor="White"/>
+                <ActivityIndicator IsRunning="{Binding IsLoadingMore}"
+                                   IsVisible="{Binding IsLoadingMore}"/>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="10"
               Padding="10,8" BackgroundColor="#FAFAFA">
             <Button Text="＋ Nuevo" Command="{Binding NewCommand}"
                     BackgroundColor="#2E7D32" TextColor="White"/>

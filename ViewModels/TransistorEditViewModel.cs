@@ -14,27 +14,40 @@ public partial class TransistorEditViewModel : BaseViewModel
     private readonly DatabaseService _databaseService;
     private readonly NavigationService _navigationService;
     private readonly DialogService _dialogService;
+    private readonly EncapsuladoSelectionService _encapsuladoSelectionService;
     private string _tableType = string.Empty;
     private int _id;
     private string _mode = "New";
     private Type _modelType = null!;
     private ITransistor _transistor = null!;
+    private List<Encapsulado> _allEncapsulados = new();
+    private HashSet<int> _selectedEncapsuladoIds = new();
 
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _transistorType = string.Empty;
     [ObservableProperty] private ObservableCollection<ParameterField> _parameters = new();
     [ObservableProperty] private ObservableCollection<Estructura> _estructuras = new();
     [ObservableProperty] private Estructura? _selectedEstructura;
-    [ObservableProperty] private ObservableCollection<Encapsulado> _allEncapsulados = new();
+    [ObservableProperty] private int _selectedEncapsuladosCount;
+    [ObservableProperty] private string _selectedEncapsuladosSummary = "Ninguno seleccionado";
+
+    public string EncapsuladosButtonText => SelectedEncapsuladosCount == 0
+        ? "Seleccionar encapsulados"
+        : $"Cambiar selección ({SelectedEncapsuladosCount:N0})";
+
+    partial void OnSelectedEncapsuladosCountChanged(int value)
+        => OnPropertyChanged(nameof(EncapsuladosButtonText));
 
     public TransistorEditViewModel(
         DatabaseService databaseService,
         NavigationService navigationService,
-        DialogService dialogService)
+        DialogService dialogService,
+        EncapsuladoSelectionService encapsuladoSelectionService)
     {
         _databaseService = databaseService;
         _navigationService = navigationService;
         _dialogService = dialogService;
+        _encapsuladoSelectionService = encapsuladoSelectionService;
     }
 
     public async Task InitializeAsync(string type, int id, string mode)
@@ -56,6 +69,8 @@ public partial class TransistorEditViewModel : BaseViewModel
             Name = string.Empty;
             SelectedEstructura = Estructuras.FirstOrDefault();
             BuildParameters(null);
+            _selectedEncapsuladoIds.Clear();
+            UpdateEncapsuladosSummary();
             UpdateSelectionStyles();
             return;
         }
@@ -66,9 +81,8 @@ public partial class TransistorEditViewModel : BaseViewModel
         SelectedEstructura = Estructuras.FirstOrDefault(x => x.Id == _transistor.StructId)
             ?? Estructuras.FirstOrDefault();
         BuildParameters(_transistor);
-
-        foreach (var cap in AllEncapsulados)
-            cap.IsSelected = _transistor.CapsIds.Contains(cap.Id);
+        _selectedEncapsuladoIds = _transistor.CapsIds.ToHashSet();
+        UpdateEncapsuladosSummary();
         UpdateSelectionStyles();
     }
 
@@ -90,9 +104,8 @@ public partial class TransistorEditViewModel : BaseViewModel
 
     private async Task LoadEncapsuladosAsync()
     {
-        AllEncapsulados.Clear();
-        foreach (var item in await _databaseService.GetAllEncapsuladosAsync())
-            AllEncapsulados.Add(item);
+        _allEncapsulados = await _databaseService.GetAllEncapsuladosAsync();
+        UpdateEncapsuladosSummary();
     }
 
     private void BuildParameters(object? source)
@@ -122,10 +135,38 @@ public partial class TransistorEditViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private void ToggleEncapsulado(Encapsulado encapsulado)
+    private async Task SelectEncapsulados()
     {
-        encapsulado.IsSelected = !encapsulado.IsSelected;
-        UpdateSelectionStyles();
+        IReadOnlyList<int>? selected = await _encapsuladoSelectionService.SelectAsync(
+            _allEncapsulados,
+            _selectedEncapsuladoIds);
+
+        if (selected == null)
+            return;
+
+        _selectedEncapsuladoIds = selected.ToHashSet();
+        UpdateEncapsuladosSummary();
+    }
+
+    private void UpdateEncapsuladosSummary()
+    {
+        var selected = _allEncapsulados
+            .Where(x => _selectedEncapsuladoIds.Contains(x.Id))
+            .OrderBy(x => x.Nombre, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        SelectedEncapsuladosCount = selected.Count;
+        if (selected.Count == 0)
+        {
+            SelectedEncapsuladosSummary = "Ninguno seleccionado";
+            return;
+        }
+
+        string names = string.Join(", ", selected.Take(4).Select(x => x.Nombre));
+        int remaining = selected.Count - 4;
+        SelectedEncapsuladosSummary = remaining > 0
+            ? $"{names} y {remaining:N0} más"
+            : names;
     }
 
     private void UpdateSelectionStyles()
@@ -172,7 +213,7 @@ public partial class TransistorEditViewModel : BaseViewModel
             IsBusy = true;
             _transistor.Name = normalizedName;
             _transistor.StructId = SelectedEstructura.Id;
-            _transistor.CapsIds = AllEncapsulados.Where(x => x.IsSelected).Select(x => x.Id).ToList();
+            _transistor.CapsIds = _selectedEncapsuladoIds.OrderBy(x => x).ToList();
 
             foreach (var parameter in Parameters)
             {

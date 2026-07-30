@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:DbTransistorsApp.ViewModels"
+             x:Class="DbTransistorsApp.Views.EncapsuladoSelectorPage"
+             x:Name="ThisPage"
+             Title="Seleccionar encapsulados">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <SearchBar Grid.Row="0"
+                   Margin="10,8,10,2"
+                   Placeholder="Buscar por nombre o ID"
+                   Text="{Binding SearchText, Mode=TwoWay}"/>
+
+        <Grid Grid.Row="1" Padding="12,5" ColumnDefinitions="*,Auto" BackgroundColor="#E3F2FD">
+            <Label Text="{Binding SelectionSummary}" FontAttributes="Bold" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Limpiar" Command="{Binding ClearSelectionCommand}"
+                    FontSize="11" Padding="10,4" BackgroundColor="#EF6C00" TextColor="White"/>
+        </Grid>
+
+        <CollectionView Grid.Row="2"
+                        ItemsSource="{Binding FilteredItems}"
+                        SelectionMode="None"
+                        ItemSizingStrategy="MeasureFirstItem">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Padding="24" Spacing="8">
+                    <Label Text="No hay encapsulados que coincidan con la búsqueda."
+                           HorizontalTextAlignment="Center" TextColor="Gray"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:EncapsuladoSelectionItem">
+                    <Border Margin="8,3" Padding="10,6" Stroke="#DDDDDD" BackgroundColor="White">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding BindingContext.ToggleCommand, Source={x:Reference ThisPage}}"
+                                CommandParameter="{Binding .}"/>
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      InputTransparent="True"
+                                      VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="{Binding Id, StringFormat='ID {0}'}"
+                                   FontSize="11" TextColor="Gray" VerticalOptions="Center"/>
+                            <Label Grid.Column="2" Text="{Binding Nombre}"
+                                   FontSize="14" VerticalOptions="Center"
+                                   LineBreakMode="TailTruncation"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="10"
+              Padding="10,8" BackgroundColor="#FAFAFA">
+            <Button Text="Cancelar" Command="{Binding CancelCommand}"
+                    BackgroundColor="#616161" TextColor="White"/>
+            <Button Grid.Column="1" Text="Aceptar" Command="{Binding AcceptCommand}"
+                    BackgroundColor="#1976D2" TextColor="White"/>
+        </Grid>
+    </Grid>
+</ContentPage>

@@ -35,6 +35,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ExcelImportService>();
         builder.Services.AddSingleton<DownloadFileService>();
         builder.Services.AddSingleton<ImageStorageService>();
+        builder.Services.AddSingleton<EncapsuladoSelectionService>();
 
         // Registrar ViewModels
         builder.Services.AddTransient<MainViewModel>();

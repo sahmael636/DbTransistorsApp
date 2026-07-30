@@ -8,7 +8,7 @@
              x:Name="ThisPage"
              Title="{Binding TransistorName, StringFormat='Transistor {0}'}">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
         <VerticalStackLayout Grid.Row="0" Padding="14,10,14,5" Spacing="4">
             <Label Text="{Binding TransistorName}" FontSize="22" FontAttributes="Bold"/>
             <Label Text="{Binding TransistorType, StringFormat='Tipo: {0}'}" FontSize="13" TextColor="Gray"/>
@@ -80,7 +80,7 @@
 
         <Grid Grid.Row="2" Padding="12,7" ColumnDefinitions="*,Auto" BackgroundColor="#E3F2FD">
             <Label Text="Reemplazos disponibles" FontSize="15" FontAttributes="Bold"/>
-            <Label Grid.Column="1" Text="{Binding ReplacementCount, StringFormat='{0} coincidencias'}"
+            <Label Grid.Column="1" Text="{Binding ReplacementsSummary}"
                    FontSize="11" TextColor="Gray" VerticalOptions="Center"/>
         </Grid>
 
@@ -98,7 +98,19 @@
                                HorizontalOptions="Center" VerticalOptions="Center"/>
         </Grid>
 
-        <Grid Grid.Row="4" Padding="8" ColumnDefinitions="*,*,*,*" ColumnSpacing="6" BackgroundColor="#FAFAFA">
+        <Grid Grid.Row="4" Padding="10,5" IsVisible="{Binding HasMoreReplacements}"
+              ColumnDefinitions="*,Auto" BackgroundColor="#F5F5F5">
+            <Label Text="Los reemplazos se muestran por bloques para evitar bloqueos."
+                   FontSize="10" TextColor="Gray" VerticalOptions="Center"/>
+            <Grid Grid.Column="1">
+                <Button Text="Cargar más" Command="{Binding LoadMoreReplacementsCommand}"
+                        Padding="14,6" FontSize="12" BackgroundColor="#455A64" TextColor="White"/>
+                <ActivityIndicator IsRunning="{Binding IsLoadingMoreReplacements}"
+                                   IsVisible="{Binding IsLoadingMoreReplacements}"/>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="5" Padding="8" ColumnDefinitions="*,*,*,*" ColumnSpacing="6" BackgroundColor="#FAFAFA">
             <Button Text="Editar" Command="{Binding EditCommand}" BackgroundColor="#1976D2" TextColor="White" FontSize="11"/>
             <Button Grid.Column="1" Text="Eliminar" Command="{Binding DeleteCommand}" BackgroundColor="#C62828" TextColor="White" FontSize="11"/>
             <Button Grid.Column="2" Text="PDF" Command="{Binding ExportToPdfCommand}" BackgroundColor="#6A1B9A" TextColor="White" FontSize="11"/>

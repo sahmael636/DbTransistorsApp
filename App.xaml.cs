@@ -31,11 +31,22 @@ public partial class App : Application
 
         try
         {
-            await _databaseService.InitializeAsync();
+            // OnStart se ejecuta en el hilo de interfaz. Incluso operaciones con API
+            // asíncrona pueden hacer trabajo síncrono interno en Android, por eso la
+            // copia/migración completa se fuerza al ThreadPool después de permitir que
+            // la pantalla inicial dibuje su primer fotograma.
+            await Task.Delay(120);
+            System.Diagnostics.Debug.WriteLine("Startup: iniciando SQLite en segundo plano.");
+            await Task.Run(async () => await _databaseService.InitializeAsync().ConfigureAwait(false));
+            System.Diagnostics.Debug.WriteLine("Startup: SQLite listo; creando AppShell.");
 
-            // Resolver AppShell solo después de inicializar SQLite. Al resolver el
-            // Shell también se crean MainPage/MainViewModel, que dependen de la BBDD.
+            // Resolver AppShell solo después de inicializar SQLite. Esta asignación
+            // vuelve al hilo de interfaz automáticamente tras el await.
             MainPage = _serviceProvider.GetRequiredService<AppShell>();
+            System.Diagnostics.Debug.WriteLine("Startup: AppShell visible.");
+
+            // Los índices que falten se crean más tarde y nunca bloquean el arranque.
+            _databaseService.StartBackgroundMaintenance();
         }
         catch (Exception ex)
         {

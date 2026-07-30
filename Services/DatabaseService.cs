@@ -12,6 +12,7 @@ public class DatabaseService
     private readonly string _dbPath;
     private readonly SemaphoreSlim _initializationLock = new(1, 1);
     private bool _isInitialized;
+    private int _maintenanceStarted;
 
     public DatabaseService()
     {
@@ -61,6 +62,9 @@ public class DatabaseService
 
     private async Task InitializeSchemaAsync()
     {
+        // Solo se aplican migraciones imprescindibles para abrir la aplicación.
+        // La creación de índices puede tardar varios minutos en algunos teléfonos
+        // y nunca debe bloquear el primer fotograma de Android.
         var columns = await _database
             .QueryAsync<PragmaColumn>("PRAGMA table_info(encapsulados)")
             .ConfigureAwait(false);
@@ -71,20 +75,44 @@ public class DatabaseService
                 .ExecuteAsync("ALTER TABLE encapsulados ADD COLUMN ruta TEXT")
                 .ConfigureAwait(false);
         }
+    }
 
-        await _database
-            .ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_byname_name_nocase ON byname(name COLLATE NOCASE)")
-            .ConfigureAwait(false);
+    public void StartBackgroundMaintenance()
+    {
+        if (!_isInitialized || Interlocked.Exchange(ref _maintenanceStarted, 1) != 0)
+            return;
 
-        foreach (string table in TransistorMetadata.TableNames)
+        _ = Task.Run(async () =>
         {
-            await _database
-                .ExecuteAsync($"CREATE INDEX IF NOT EXISTS idx_{table}_name_nocase ON {table}(name COLLATE NOCASE)")
-                .ConfigureAwait(false);
-            await _database
-                .ExecuteAsync($"CREATE INDEX IF NOT EXISTS idx_{table}_struct ON {table}(struct_id)")
-                .ConfigureAwait(false);
-        }
+            try
+            {
+                // Se deja estabilizar la primera pantalla antes de iniciar trabajo de E/S.
+                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+
+                await _database.ExecuteAsync("PRAGMA busy_timeout = 1500").ConfigureAwait(false);
+
+                var statements = new List<string>
+                {
+                    "CREATE INDEX IF NOT EXISTS idx_byname_name_nocase ON byname(name COLLATE NOCASE)"
+                };
+
+                foreach (string table in TransistorMetadata.TableNames)
+                {
+                    statements.Add($"CREATE INDEX IF NOT EXISTS idx_{table}_name_nocase ON {table}(name COLLATE NOCASE)");
+                    statements.Add($"CREATE INDEX IF NOT EXISTS idx_{table}_struct ON {table}(struct_id)");
+                }
+
+                foreach (string statement in statements)
+                {
+                    await _database.ExecuteAsync(statement).ConfigureAwait(false);
+                    await Task.Delay(75).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Mantenimiento SQLite omitido: {ex}");
+            }
+        });
     }
 
     public string DatabasePath => _dbPath;
@@ -229,7 +257,7 @@ public class DatabaseService
             SELECT * FROM byname
             WHERE name LIKE ? COLLATE NOCASE
             ORDER BY name COLLATE NOCASE
-            LIMIT 1000", $"%{searchTerm}%");
+            LIMIT 1000", $"%{searchTerm.Trim()}%");
     }
 
     private async Task UpsertByNameAsync(string tableName, ITransistor transistor)
@@ -399,15 +427,80 @@ public class DatabaseService
         return await ExecuteQueryAsync(table, query, args.ToArray());
     }
 
-    public async Task<List<object>> GetFilteredTransistorsAsync(
+    public async Task<PagedResult<object>> GetReplacementPageAsync(
+        string tableName,
+        Dictionary<string, object> parameters,
+        int structId,
+        List<int>? capsIds,
+        int limit,
+        int offset)
+    {
+        string table = TransistorMetadata.NormalizeTableName(tableName);
+        Type type = TransistorMetadata.GetModelType(table);
+        limit = Math.Clamp(limit, 1, 500);
+        offset = Math.Max(0, offset);
+
+        var conditions = new List<string>();
+        var args = new List<object>();
+
+        foreach (var param in parameters)
+        {
+            if (param.Key == "_id" || param.Value == null)
+                continue;
+
+            if (param.Value is double doubleValue && doubleValue > 0)
+            {
+                conditions.Add($"t.{GetMappedColumnName(type, param.Key)} >= ?");
+                args.Add(doubleValue);
+            }
+        }
+
+        if (structId > 0)
+        {
+            conditions.Add("t.struct_id = ?");
+            args.Add(structId);
+        }
+
+        if (parameters.TryGetValue("_id", out object? currentId))
+        {
+            conditions.Add("t._id <> ?");
+            args.Add(currentId);
+        }
+
+        string from = $"FROM {table} t";
+        if (capsIds is { Count: > 0 })
+        {
+            var placeholders = string.Join(",", capsIds.Select(_ => "?"));
+            from += $" INNER JOIN {table}_caps tc ON t._id = tc.{table}_id";
+            conditions.Insert(0, $"tc.caps_id IN ({placeholders})");
+            args.InsertRange(0, capsIds.Cast<object>());
+        }
+
+        string where = conditions.Count > 0 ? $"WHERE {string.Join(" AND ", conditions)}" : string.Empty;
+        int total = await _database.ExecuteScalarAsync<int>(
+            $"SELECT COUNT(DISTINCT t._id) {from} {where}",
+            args.ToArray()).ConfigureAwait(false);
+
+        var pageArgs = new List<object>(args) { limit, offset };
+        string query = $"SELECT DISTINCT t.* {from} {where} ORDER BY t.name COLLATE NOCASE LIMIT ? OFFSET ?";
+        var items = await ExecuteQueryAsync(table, query, pageArgs.ToArray()).ConfigureAwait(false);
+        return new PagedResult<object>(items, total);
+    }
+
+    public async Task<PagedResult<object>> GetFilteredTransistorPageAsync(
         string tableName,
         IReadOnlyDictionary<string, double> minimumFilters,
         IReadOnlyDictionary<string, double> maximumFilters,
-        int structId)
+        int structId,
+        int limit,
+        int offset)
     {
         string table = TransistorMetadata.NormalizeTableName(tableName);
         if (structId <= 0)
-            return new List<object>();
+            return new PagedResult<object>(Array.Empty<object>(), 0);
+
+        limit = Math.Clamp(limit, 1, 500);
+        offset = Math.Max(0, offset);
 
         Type modelType = TransistorMetadata.GetModelType(table);
         var conditions = new List<string> { "struct_id = ?" };
@@ -425,8 +518,26 @@ public class DatabaseService
             args.Add(filter.Value);
         }
 
-        string query = $"SELECT * FROM {table} WHERE {string.Join(" AND ", conditions)} ORDER BY name COLLATE NOCASE";
-        return await ExecuteQueryAsync(table, query, args.ToArray());
+        string where = string.Join(" AND ", conditions);
+        int total = await _database.ExecuteScalarAsync<int>(
+            $"SELECT COUNT(*) FROM {table} WHERE {where}",
+            args.ToArray()).ConfigureAwait(false);
+
+        var pageArgs = new List<object>(args) { limit, offset };
+        string query = $"SELECT * FROM {table} WHERE {where} ORDER BY name COLLATE NOCASE LIMIT ? OFFSET ?";
+        var items = await ExecuteQueryAsync(table, query, pageArgs.ToArray()).ConfigureAwait(false);
+        return new PagedResult<object>(items, total);
+    }
+
+    public async Task<List<object>> GetFilteredTransistorsAsync(
+        string tableName,
+        IReadOnlyDictionary<string, double> minimumFilters,
+        IReadOnlyDictionary<string, double> maximumFilters,
+        int structId)
+    {
+        var page = await GetFilteredTransistorPageAsync(
+            tableName, minimumFilters, maximumFilters, structId, 500, 0).ConfigureAwait(false);
+        return page.Items.ToList();
     }
 
     // ==================== CRUD GENÉRICO ====================

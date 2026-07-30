@@ -27,6 +27,8 @@ public partial class TransistorDetailViewModel : BaseViewModel
     private IReadOnlyList<PropertyInfo> _displayProperties = Array.Empty<PropertyInfo>();
     private bool _initialized;
     private bool _reloadOnNextAppearance;
+    private Dictionary<string, object> _activeReplacementCriteria = new();
+    private readonly int _replacementPageSize;
 
     [ObservableProperty] private string _transistorName = string.Empty;
     [ObservableProperty] private string _transistorType = string.Empty;
@@ -35,6 +37,25 @@ public partial class TransistorDetailViewModel : BaseViewModel
     [ObservableProperty] private ObservableCollection<TransistorParameter> _parameters = new();
     [ObservableProperty] private ObservableCollection<ReplacementRow> _replacements = new();
     [ObservableProperty] private int _replacementCount;
+    [ObservableProperty] private int _loadedReplacementCount;
+    [ObservableProperty] private bool _hasMoreReplacements;
+    [ObservableProperty] private bool _isLoadingMoreReplacements;
+
+    public string ReplacementsSummary => ReplacementCount == 0
+        ? "Sin coincidencias"
+        : $"Mostrando {LoadedReplacementCount:N0} de {ReplacementCount:N0}";
+
+    partial void OnReplacementCountChanged(int value)
+    {
+        HasMoreReplacements = LoadedReplacementCount < value;
+        OnPropertyChanged(nameof(ReplacementsSummary));
+    }
+
+    partial void OnLoadedReplacementCountChanged(int value)
+    {
+        HasMoreReplacements = value < ReplacementCount;
+        OnPropertyChanged(nameof(ReplacementsSummary));
+    }
     [ObservableProperty] private double _columnWidth = 90;
     [ObservableProperty] private double _replacementsTableWidth = 600;
     [ObservableProperty] private bool _areParametersExpanded;
@@ -63,6 +84,7 @@ public partial class TransistorDetailViewModel : BaseViewModel
         _excelExportService = excelExportService;
         _imageStorageService = imageStorageService;
         AreParametersExpanded = DeviceInfo.Idiom != DeviceIdiom.Phone;
+        _replacementPageSize = DeviceInfo.Idiom == DeviceIdiom.Phone ? 75 : 200;
     }
 
     public async Task InitializeAsync(string type, int id)
@@ -205,6 +227,25 @@ public partial class TransistorDetailViewModel : BaseViewModel
 
     private async Task LoadReplacementsAsync()
     {
+        _activeReplacementCriteria = BuildReplacementCriteria();
+        PagedResult<object> page = await _databaseService.GetReplacementPageAsync(
+            _tableType,
+            _activeReplacementCriteria,
+            _currentTransistor.StructId,
+            _currentTransistor.CapsIds,
+            _replacementPageSize,
+            0);
+
+        Replacements.Clear();
+        foreach (object item in page.Items)
+            Replacements.Add(CreateReplacementRow(item));
+
+        ReplacementCount = page.TotalCount;
+        LoadedReplacementCount = Replacements.Count;
+    }
+
+    private Dictionary<string, object> BuildReplacementCriteria()
+    {
         var criteria = new Dictionary<string, object>();
         OriginalParameters.Clear();
         foreach (PropertyInfo property in _displayProperties)
@@ -216,27 +257,59 @@ public partial class TransistorDetailViewModel : BaseViewModel
                 criteria[property.Name] = number;
         }
         criteria["_id"] = _id;
+        return criteria;
+    }
 
+    private ReplacementRow CreateReplacementRow(object item)
+    {
+        var row = new ReplacementRow
+        {
+            Id = Convert.ToInt32(item.GetType().GetProperty("Id")?.GetValue(item) ?? 0),
+            Name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty,
+            Original = item
+        };
+        foreach (PropertyInfo property in _displayProperties)
+            row.Values.Add(FormatValue(property.GetValue(item)));
+        return row;
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreReplacements()
+    {
+        if (IsBusy || IsLoadingMoreReplacements || !HasMoreReplacements)
+            return;
+
+        try
+        {
+            IsLoadingMoreReplacements = true;
+            PagedResult<object> page = await _databaseService.GetReplacementPageAsync(
+                _tableType,
+                _activeReplacementCriteria,
+                _currentTransistor.StructId,
+                _currentTransistor.CapsIds,
+                _replacementPageSize,
+                Replacements.Count);
+
+            foreach (object item in page.Items)
+                Replacements.Add(CreateReplacementRow(item));
+
+            ReplacementCount = page.TotalCount;
+            LoadedReplacementCount = Replacements.Count;
+        }
+        finally
+        {
+            IsLoadingMoreReplacements = false;
+        }
+    }
+
+    private async Task<List<ReplacementRow>> GetAllReplacementRowsAsync()
+    {
         var matches = await _databaseService.GetReplacementsAsync(
             _tableType,
-            criteria,
+            _activeReplacementCriteria,
             _currentTransistor.StructId,
             _currentTransistor.CapsIds);
-
-        Replacements.Clear();
-        foreach (object item in matches)
-        {
-            var row = new ReplacementRow
-            {
-                Id = Convert.ToInt32(item.GetType().GetProperty("Id")?.GetValue(item) ?? 0),
-                Name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty,
-                Original = item
-            };
-            foreach (PropertyInfo property in _displayProperties)
-                row.Values.Add(FormatValue(property.GetValue(item)));
-            Replacements.Add(row);
-        }
-        ReplacementCount = Replacements.Count;
+        return matches.Select(CreateReplacementRow).ToList();
     }
 
     [RelayCommand]
@@ -315,7 +388,8 @@ public partial class TransistorDetailViewModel : BaseViewModel
             string path = Path.Combine(
                 FileSystem.CacheDirectory,
                 $"Reemplazos_{SanitizeFileName(TransistorName)}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
-            var rows = Replacements.Select(x => new PdfReplacementRow(
+            List<ReplacementRow> allReplacements = await GetAllReplacementRowsAsync();
+            var rows = allReplacements.Select(x => new PdfReplacementRow(
                 x.Name,
                 x.Values.Take(ReplacementHeaders.Count).ToList())).ToList();
 
@@ -362,7 +436,7 @@ public partial class TransistorDetailViewModel : BaseViewModel
                 TransistorStructure,
                 OriginalParameters,
                 ReplacementHeaders.ToList(),
-                Replacements.ToList());
+                await GetAllReplacementRowsAsync());
             string path = Path.Combine(
                 FileSystem.CacheDirectory,
                 $"Reemplazos_{SanitizeFileName(TransistorName)}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");

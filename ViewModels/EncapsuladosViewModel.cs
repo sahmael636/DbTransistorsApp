@@ -14,8 +14,26 @@ public partial class EncapsuladosViewModel : BaseViewModel
     private readonly NavigationService _navigationService;
     private readonly DialogService _dialogService;
     private readonly ImageStorageService _imageStorageService;
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private List<Encapsulado> _allEncapsulados = new();
 
-    [ObservableProperty] private ObservableCollection<Encapsulado> _encapsulados = new();
+    [ObservableProperty]
+    private ObservableCollection<Encapsulado> _encapsulados = new();
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private int _visibleCount;
+
+    public string ResultsSummary => string.IsNullOrWhiteSpace(SearchText)
+        ? $"{VisibleCount:N0} encapsulados"
+        : $"{VisibleCount:N0} coincidencias";
+
+    partial void OnSearchTextChanged(string value) => ApplyFilter();
+
+    partial void OnVisibleCountChanged(int value)
+        => OnPropertyChanged(nameof(ResultsSummary));
 
     public EncapsuladosViewModel(
         DatabaseService databaseService,
@@ -37,20 +55,46 @@ public partial class EncapsuladosViewModel : BaseViewModel
 
     private async Task LoadAsync()
     {
+        if (!await _loadLock.WaitAsync(0))
+            return;
+
         try
         {
             IsBusy = true;
-            Encapsulados.Clear();
-            foreach (var item in await _databaseService.GetAllEncapsuladosAsync())
-            {
+            var loaded = await _databaseService.GetAllEncapsuladosAsync();
+            _allEncapsulados = loaded
+                .GroupBy(x => x.Id)
+                .Select(x => x.First())
+                .OrderBy(x => x.Nombre, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            foreach (var item in _allEncapsulados)
                 item.ImagenPreview = _imageStorageService.GetImagePath(item.Imagen);
-                Encapsulados.Add(item);
-            }
+
+            ApplyFilter();
         }
         finally
         {
             IsBusy = false;
+            _loadLock.Release();
         }
+    }
+
+    private void ApplyFilter()
+    {
+        string term = SearchText?.Trim() ?? string.Empty;
+        IEnumerable<Encapsulado> filtered = _allEncapsulados;
+
+        if (term.Length > 0)
+        {
+            filtered = filtered.Where(x =>
+                x.Nombre.Contains(term, StringComparison.CurrentCultureIgnoreCase)
+                || x.Id.ToString().Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        Encapsulados = new ObservableCollection<Encapsulado>(filtered);
+        VisibleCount = Encapsulados.Count;
+        OnPropertyChanged(nameof(ResultsSummary));
     }
 
     [RelayCommand]

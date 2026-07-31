@@ -58,12 +58,13 @@
                                     <Grid RowDefinitions="Auto,Auto">
                                         <Label Text="{Binding DisplayName}" FontSize="11" FontAttributes="Bold"/>
                                         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-                                            <Entry Text="{Binding Value}" Keyboard="Numeric" FontSize="12" BackgroundColor="White">
+                                            <Entry x:Name="ParameterEntry" Text="{Binding Value, Mode=TwoWay}" Keyboard="Numeric" FontSize="12" BackgroundColor="White">
                                                 <Entry.Behaviors>
                                                     <toolkit:EventToCommandBehavior
                                                         EventName="Unfocused"
                                                         Command="{Binding BindingContext.ParameterChangedCommand, Source={x:Reference ThisPage}}"
-                                                        CommandParameter="{Binding Name}"/>
+                                                        CommandParameter="{Binding Source={x:Reference ParameterEntry},
+                                       Path=BindingContext}"/>
                                                 </Entry.Behaviors>
                                             </Entry>
                                             <Label Grid.Column="1" Text="{Binding Unit}" Margin="4,0,0,0"

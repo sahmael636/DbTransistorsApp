@@ -11,6 +11,7 @@ public partial class EstructurasViewModel : BaseViewModel
 {
     private readonly DatabaseService _databaseService;
     private readonly DialogService _dialogService;
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     [ObservableProperty] private ObservableCollection<Estructura> _estructuras = new();
 
@@ -28,16 +29,23 @@ public partial class EstructurasViewModel : BaseViewModel
 
     private async Task LoadAsync()
     {
+        if (!await _loadLock.WaitAsync(0))
+            return;
+
         try
         {
             IsBusy = true;
-            Estructuras.Clear();
-            foreach (var item in await _databaseService.GetAllEstructurasAsync())
-                Estructuras.Add(item);
+            var loaded = await _databaseService.GetAllEstructurasAsync();
+            Estructuras = new ObservableCollection<Estructura>(
+                loaded
+                    .GroupBy(x => x.Id)
+                    .Select(x => x.First())
+                    .OrderBy(x => x.Id));
         }
         finally
         {
             IsBusy = false;
+            _loadLock.Release();
         }
     }
 

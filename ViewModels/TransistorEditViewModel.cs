@@ -22,6 +22,8 @@ public partial class TransistorEditViewModel : BaseViewModel
     private ITransistor _transistor = null!;
     private List<Encapsulado> _allEncapsulados = new();
     private HashSet<int> _selectedEncapsuladoIds = new();
+    private string? _initializationKey;
+    private Task? _initializationTask;
 
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _transistorType = string.Empty;
@@ -50,11 +52,25 @@ public partial class TransistorEditViewModel : BaseViewModel
         _encapsuladoSelectionService = encapsuladoSelectionService;
     }
 
-    public async Task InitializeAsync(string type, int id, string mode)
+    public Task InitializeAsync(string type, int id, string mode)
     {
-        _tableType = TransistorMetadata.NormalizeTableName(type);
+        string normalizedType = TransistorMetadata.NormalizeTableName(type);
+        string normalizedMode = string.Equals(mode, "Edit", StringComparison.OrdinalIgnoreCase) ? "Edit" : "New";
+        string key = $"{normalizedType}|{id}|{normalizedMode}";
+
+        if (string.Equals(_initializationKey, key, StringComparison.Ordinal) && _initializationTask != null)
+            return _initializationTask;
+
+        _initializationKey = key;
+        _initializationTask = InitializeCoreAsync(normalizedType, id, normalizedMode);
+        return _initializationTask;
+    }
+
+    private async Task InitializeCoreAsync(string normalizedType, int id, string normalizedMode)
+    {
+        _tableType = normalizedType;
         _id = id;
-        _mode = string.Equals(mode, "Edit", StringComparison.OrdinalIgnoreCase) ? "Edit" : "New";
+        _mode = normalizedMode;
         _modelType = TransistorMetadata.GetModelType(_tableType);
         TransistorType = TransistorMetadata.GetDisplayName(_tableType);
         Title = _mode == "New" ? $"Nuevo {TransistorType}" : $"Editar {TransistorType}";
@@ -137,15 +153,44 @@ public partial class TransistorEditViewModel : BaseViewModel
     [RelayCommand]
     private async Task SelectEncapsulados()
     {
+        // Conserva explícitamente el borrador. En Android una navegación modal puede
+        // volver a disparar eventos de ciclo de vida de la página que no deben
+        // reinicializar ni borrar lo que el usuario ya escribió.
+        FormDraft draft = CaptureDraft();
+
         IReadOnlyList<int>? selected = await _encapsuladoSelectionService.SelectAsync(
             _allEncapsulados,
             _selectedEncapsuladoIds);
+
+        RestoreDraft(draft);
 
         if (selected == null)
             return;
 
         _selectedEncapsuladoIds = selected.ToHashSet();
         UpdateEncapsuladosSummary();
+    }
+
+    private FormDraft CaptureDraft()
+        => new(
+            Name,
+            SelectedEstructura?.Id ?? 0,
+            Parameters.ToDictionary(x => x.Name, x => x.Value, StringComparer.Ordinal));
+
+    private void RestoreDraft(FormDraft draft)
+    {
+        Name = draft.Name;
+        SelectedEstructura = Estructuras.FirstOrDefault(x => x.Id == draft.StructureId)
+            ?? SelectedEstructura
+            ?? Estructuras.FirstOrDefault();
+
+        foreach (var parameter in Parameters)
+        {
+            if (draft.ParameterValues.TryGetValue(parameter.Name, out string? value))
+                parameter.Value = value;
+        }
+
+        UpdateSelectionStyles();
     }
 
     private void UpdateEncapsuladosSummary()
@@ -271,6 +316,11 @@ public partial class TransistorEditViewModel : BaseViewModel
     private static bool TryParseDouble(string value, out double result)
         => double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result)
            || double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+
+    private sealed record FormDraft(
+        string Name,
+        int StructureId,
+        IReadOnlyDictionary<string, string> ParameterValues);
 }
 
 public partial class ParameterField : ObservableObject

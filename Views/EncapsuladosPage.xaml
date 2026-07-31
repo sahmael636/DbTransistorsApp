@@ -5,38 +5,60 @@
              x:Class="DbTransistorsApp.Views.EncapsuladosPage"
              x:Name="ThisPage"
              Title="{Binding Title}">
-    <Grid>
-        <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
-            <CollectionView ItemsSource="{Binding Encapsulados}" Margin="10,8,10,85">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:Encapsulado">
-                        <Border Margin="0,4" Padding="12" Stroke="#DDDDDD" BackgroundColor="White">
-                            <Grid ColumnDefinitions="64,*,Auto,Auto" ColumnSpacing="8">
-                                <Border WidthRequest="58" HeightRequest="58" Stroke="#DDDDDD" BackgroundColor="#F5F5F5">
-                                    <Image Source="{Binding ImagenPreview}" Aspect="AspectFit"/>
-                                </Border>
-                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
-                                    <Label Text="{Binding Id, StringFormat='ID {0}'}" FontSize="11" TextColor="#1565C0"/>
-                                    <Label Text="{Binding Nombre}" FontSize="16" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Imagen}" FontSize="9" TextColor="Gray" LineBreakMode="TailTruncation"/>
-                                </VerticalStackLayout>
-                                <Button Grid.Column="2" Text="Editar" FontSize="11" Padding="9,5"
-                                        Command="{Binding BindingContext.EditEncapsuladoCommand, Source={x:Reference ThisPage}}"
-                                        CommandParameter="{Binding .}"/>
-                                <Button Grid.Column="3" Text="Eliminar" FontSize="11" Padding="9,5"
-                                        BackgroundColor="#C62828" TextColor="White"
-                                        Command="{Binding BindingContext.DeleteEncapsuladoCommand, Source={x:Reference ThisPage}}"
-                                        CommandParameter="{Binding .}"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </RefreshView>
+    <Grid RowDefinitions="Auto,Auto,*">
+        <SearchBar Grid.Row="0"
+                   Margin="10,8,10,2"
+                   Placeholder="Buscar por parte del nombre o por ID"
+                   Text="{Binding SearchText, Mode=TwoWay}"/>
 
-        <Button Text="＋" WidthRequest="60" HeightRequest="60" CornerRadius="30"
-                HorizontalOptions="End" VerticalOptions="End" Margin="20"
-                BackgroundColor="#2E7D32" TextColor="White" FontSize="25"
-                Command="{Binding NewEncapsuladoCommand}"/>
+        <Label Grid.Row="1"
+               Margin="14,2,14,4"
+               Text="{Binding ResultsSummary}"
+               FontSize="12"
+               TextColor="Gray"/>
+
+        <Grid Grid.Row="2">
+            <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
+                <CollectionView ItemsSource="{Binding Encapsulados}"
+                                Margin="10,4,10,85"
+                                ItemSizingStrategy="MeasureFirstItem">
+                    <CollectionView.EmptyView>
+                        <Label Text="No se encontraron encapsulados."
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"
+                               TextColor="Gray"
+                               Margin="20"/>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Encapsulado">
+                            <Border Margin="0,4" Padding="12" Stroke="#DDDDDD" BackgroundColor="White">
+                                <Grid ColumnDefinitions="64,*,Auto,Auto" ColumnSpacing="8">
+                                    <Border WidthRequest="58" HeightRequest="58" Stroke="#DDDDDD" BackgroundColor="#F5F5F5">
+                                        <Image Source="{Binding ImagenPreview}" Aspect="AspectFit"/>
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                        <Label Text="{Binding Id, StringFormat='ID {0}'}" FontSize="11" TextColor="#1565C0"/>
+                                        <Label Text="{Binding Nombre}" FontSize="16" FontAttributes="Bold"/>
+                                        <Label Text="{Binding Imagen}" FontSize="9" TextColor="Gray" LineBreakMode="TailTruncation"/>
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="2" Text="Editar" FontSize="11" Padding="9,5"
+                                            Command="{Binding BindingContext.EditEncapsuladoCommand, Source={x:Reference ThisPage}}"
+                                            CommandParameter="{Binding .}"/>
+                                    <Button Grid.Column="3" Text="Eliminar" FontSize="11" Padding="9,5"
+                                            BackgroundColor="#C62828" TextColor="White"
+                                            Command="{Binding BindingContext.DeleteEncapsuladoCommand, Source={x:Reference ThisPage}}"
+                                            CommandParameter="{Binding .}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+
+            <Button Text="＋" WidthRequest="60" HeightRequest="60" CornerRadius="30"
+                    HorizontalOptions="End" VerticalOptions="End" Margin="20"
+                    BackgroundColor="#2E7D32" TextColor="White" FontSize="25"
+                    Command="{Binding NewEncapsuladoCommand}"/>
+        </Grid>
     </Grid>
 </ContentPage>

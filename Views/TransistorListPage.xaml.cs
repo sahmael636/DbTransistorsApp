@@ -22,6 +22,11 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // InitializeAsync configura los encabezados antes de su primera consulta.
+        // Construir la plantilla cuanto antes evita que CollectionView dibuje una
+        // lista provisional y luego tenga que reconstruirla completa.
+        BuildTable();
         await _initializationTask;
         if (!_firstAppearance)
             await _viewModel.OnAppearingAsync();
@@ -37,12 +42,14 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
 
     private void BuildTable()
     {
-        if (_viewModel.HeaderFields.Count == 0)
+        if (_tableBuilt || _viewModel.HeaderFields.Count == 0)
             return;
 
+        var stopwatch = Stopwatch.StartNew();
         BuildHeader();
         BuildItemTemplate();
         _tableBuilt = true;
+        Debug.WriteLine($"TransistorList: plantilla visual construida en {stopwatch.ElapsedMilliseconds} ms.");
     }
 
     private void BuildHeader()
@@ -64,26 +71,21 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
 
     private static View CreateHeaderLabel(string text, int column, double width)
     {
-        var border = new Border
+        var label = new Label
         {
+            Text = text,
             WidthRequest = width,
             Padding = new Thickness(4, 5),
-            Stroke = Colors.White.WithAlpha(0.18f),
-            StrokeThickness = 0.5,
-            Content = new Label
-            {
-                Text = text,
-                TextColor = Colors.White,
-                FontAttributes = FontAttributes.Bold,
-                FontSize = 11,
-                HorizontalTextAlignment = TextAlignment.Center,
-                VerticalTextAlignment = TextAlignment.Center,
-                LineBreakMode = LineBreakMode.WordWrap,
-                MaxLines = 2
-            }
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 11,
+            HorizontalTextAlignment = TextAlignment.Center,
+            VerticalTextAlignment = TextAlignment.Center,
+            LineBreakMode = LineBreakMode.WordWrap,
+            MaxLines = 2
         };
-        Grid.SetColumn(border, column);
-        return border;
+        Grid.SetColumn(label, column);
+        return label;
     }
 
     private void BuildItemTemplate()
@@ -95,8 +97,10 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
         {
             var grid = new Grid
             {
-                RowDefinitions = { new RowDefinition(GridLength.Auto) },
-                BackgroundColor = Colors.Transparent
+                HeightRequest = 38,
+                RowSpacing = 0,
+                ColumnSpacing = 0,
+                BackgroundColor = Colors.White
             };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NameColumnWidth) });
             for (int index = 0; index < fieldCount; index++)
@@ -108,15 +112,24 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
             tap.SetBinding(TapGestureRecognizer.CommandParameterProperty, new Binding("."));
             grid.GestureRecognizers.Add(tap);
 
-            grid.Children.Add(CreateDataCell("Name", 0, NameColumnWidth, 11, FontAttributes.Bold));
+            grid.Children.Add(CreateDataLabel("Name", 0, NameColumnWidth, 11, FontAttributes.Bold));
             for (int index = 0; index < fieldCount; index++)
-                grid.Children.Add(CreateDataCell($"Values[{index}]", index + 1, columnWidth, 10));
+                grid.Children.Add(CreateDataLabel($"Values[{index}]", index + 1, columnWidth, 10));
+
+            var separator = new BoxView
+            {
+                HeightRequest = 0.5,
+                BackgroundColor = Color.FromArgb("#E0E0E0"),
+                VerticalOptions = LayoutOptions.End
+            };
+            Grid.SetColumnSpan(separator, fieldCount + 1);
+            grid.Children.Add(separator);
 
             return grid;
         });
     }
 
-    private static View CreateDataCell(
+    private static View CreateDataLabel(
         string bindingPath,
         int column,
         double width,
@@ -125,6 +138,8 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
     {
         var label = new Label
         {
+            WidthRequest = width,
+            Padding = new Thickness(4, 5),
             FontSize = fontSize,
             FontAttributes = fontAttributes,
             TextColor = Colors.Black,
@@ -134,18 +149,8 @@ public partial class TransistorListPage : ContentPage, IQueryAttributable
             MaxLines = 1
         };
         label.SetBinding(Label.TextProperty, bindingPath);
-
-        var border = new Border
-        {
-            WidthRequest = width,
-            MinimumHeightRequest = 36,
-            Padding = new Thickness(4, 7),
-            Stroke = Color.FromArgb("#E0E0E0"),
-            StrokeThickness = 0.5,
-            Content = label
-        };
-        Grid.SetColumn(border, column);
-        return border;
+        Grid.SetColumn(label, column);
+        return label;
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)

@@ -20,7 +20,7 @@
                 </Border>
 
                 <Label Text="Nombre del transistor *" FontAttributes="Bold"/>
-                <Entry Text="{Binding Name}" Placeholder="Ej.: 2N2222, IRF540" BackgroundColor="White"/>
+                <Entry Text="{Binding Name, Mode=TwoWay}" Placeholder="Ej.: 2N2222, IRF540" BackgroundColor="White"/>
 
                 <Label Text="Estructura *" FontAttributes="Bold" Margin="0,6,0,0"/>
                 <FlexLayout BindableLayout.ItemsSource="{Binding Estructuras}"
@@ -52,7 +52,7 @@
                                 <Grid RowDefinitions="Auto,Auto">
                                     <Label Text="{Binding DisplayName}" FontSize="12" FontAttributes="Bold"/>
                                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-                                        <Entry Text="{Binding Value}" Keyboard="{Binding InputKeyboard}" FontSize="13"
+                                        <Entry Text="{Binding Value, Mode=TwoWay}" Keyboard="{Binding InputKeyboard}" FontSize="13"
                                                Placeholder="Vacío" BackgroundColor="White"/>
                                         <Label Grid.Column="1" Text="{Binding Unit}" Margin="5,0,0,0"
                                                FontSize="11" TextColor="Gray" VerticalOptions="Center"/>

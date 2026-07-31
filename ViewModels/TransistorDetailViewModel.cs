@@ -189,32 +189,59 @@ public partial class TransistorDetailViewModel : BaseViewModel
     private void ToggleParameters() => AreParametersExpanded = !AreParametersExpanded;
 
     [RelayCommand]
-    private async Task ParameterChanged(string parameterName)
+    private async Task ParameterChanged(TransistorParameter? parameter)
     {
-        var parameter = Parameters.FirstOrDefault(x => x.Name == parameterName);
-        PropertyInfo? property = _modelType.GetProperty(parameterName);
-        if (parameter == null || property == null)
+        if (parameter is null || string.IsNullOrWhiteSpace(parameter.Name))
             return;
+
+        PropertyInfo? property = _modelType.GetProperty(parameter.Name);
+
+        if (property is null || !property.CanWrite)
+            return;
+
+        double newValue;
 
         if (string.IsNullOrWhiteSpace(parameter.Value))
         {
-            property.SetValue(_currentTransistor, null);
+            newValue = 0d;
+            parameter.Value = "0";
         }
-        else if (TryParseDouble(parameter.Value, out double value))
-        {
-            property.SetValue(_currentTransistor, value);
-        }
-        else
+        else if (!TryParseDouble(parameter.Value, out newValue))
         {
             await _dialogService.ShowAlertAsync(
                 "Valor inválido",
                 $"{parameter.DisplayName} no contiene un número válido.",
                 "OK");
+
             return;
+        }
+
+        // Las propiedades numéricas de los modelos son double?
+        if (property.PropertyType == typeof(double?))
+        {
+            property.SetValue(_currentTransistor, (double?)newValue);
+        }
+        else if (property.PropertyType == typeof(double))
+        {
+            property.SetValue(_currentTransistor, newValue);
+        }
+        else
+        {
+            Type targetType =
+                Nullable.GetUnderlyingType(property.PropertyType)
+                ?? property.PropertyType;
+
+            object convertedValue = Convert.ChangeType(
+                newValue,
+                targetType,
+                CultureInfo.InvariantCulture);
+
+            property.SetValue(_currentTransistor, convertedValue);
         }
 
         await LoadReplacementsAsync();
     }
+
 
     [RelayCommand]
     private async Task ResetToDefault()

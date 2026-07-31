@@ -99,6 +99,7 @@
                                     Grid.Row="1"
                                     ItemsSource="{Binding Transistors}"
                                     SelectionMode="None"
+                                    ItemSizingStrategy="MeasureFirstItem"
                                     IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
                 </Grid>
             </ScrollView>

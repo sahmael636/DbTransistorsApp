@@ -86,10 +86,16 @@ public class DatabaseService
         {
             try
             {
-                // Se deja estabilizar la primera pantalla antes de iniciar trabajo de E/S.
-                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                // La base distribuida ya incluye los índices. No se abre una
+                // segunda operación de escritura durante las primeras consultas
+                // si la migración ya fue aplicada.
+                int version = await _database
+                    .ExecuteScalarAsync<int>("PRAGMA user_version")
+                    .ConfigureAwait(false);
+                if (version >= 2)
+                    return;
 
-                await _database.ExecuteAsync("PRAGMA busy_timeout = 1500").ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(8)).ConfigureAwait(false);
 
                 var statements = new List<string>
                 {
@@ -105,8 +111,10 @@ public class DatabaseService
                 foreach (string statement in statements)
                 {
                     await _database.ExecuteAsync(statement).ConfigureAwait(false);
-                    await Task.Delay(75).ConfigureAwait(false);
+                    await Task.Delay(100).ConfigureAwait(false);
                 }
+
+                await _database.ExecuteAsync("PRAGMA user_version = 2").ConfigureAwait(false);
             }
             catch (Exception ex)
             {

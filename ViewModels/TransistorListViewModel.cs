@@ -5,6 +5,7 @@ using DbTransistorsApp.Services;
 using DbTransistorsApp.ViewModels.Base;
 using DbTransistorsApp.Views;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
@@ -114,7 +115,7 @@ public partial class TransistorListViewModel : BaseViewModel
         _excelImportService = excelImportService;
         _downloadFileService = downloadFileService;
         AreFiltersExpanded = DeviceInfo.Idiom != DeviceIdiom.Phone;
-        _pageSize = DeviceInfo.Idiom == DeviceIdiom.Phone ? 75 : 200;
+        _pageSize = DeviceInfo.Platform == DevicePlatform.Android ? 30 : 200;
     }
 
     public async Task InitializeAsync(TableType tableType)
@@ -250,6 +251,7 @@ public partial class TransistorListViewModel : BaseViewModel
                 return;
             }
 
+            var stopwatch = Stopwatch.StartNew();
             PagedResult<object> page = await _databaseService.GetFilteredTransistorPageAsync(
                 _tableType.GetTableName(),
                 _activeMinimums,
@@ -257,7 +259,13 @@ public partial class TransistorListViewModel : BaseViewModel
                 SelectedStructure.Id,
                 _pageSize,
                 0);
+            long queryMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            stopwatch.Restart();
             SetTransistors(page.Items, page.TotalCount);
+            Debug.WriteLine(
+                $"TransistorList: tabla={_tableType.GetTableName()}, consulta={queryMilliseconds} ms, " +
+                $"preparacionUI={stopwatch.ElapsedMilliseconds} ms, filas={page.Items.Count}, total={page.TotalCount}");
         }
         finally
         {
@@ -444,19 +452,20 @@ public partial class TransistorListViewModel : BaseViewModel
 
     private void SetTransistors(IEnumerable<object> items, int totalCount)
     {
-        Transistors.Clear();
-        foreach (var item in items)
-            Transistors.Add(CreateRowFromObject(item));
+        // Una sola notificación de cambio evita que Android vuelva a medir la tabla
+        // por cada fila agregada.
+        var rows = items.Select(CreateRowFromObject).ToList();
+        Transistors = new ObservableCollection<TransistorRow>(rows);
         TotalMatches = totalCount;
-        LoadedMatches = Transistors.Count;
+        LoadedMatches = rows.Count;
     }
 
     private void AppendTransistors(IEnumerable<object> items, int totalCount)
     {
-        foreach (var item in items)
-            Transistors.Add(CreateRowFromObject(item));
+        var rows = Transistors.Concat(items.Select(CreateRowFromObject)).ToList();
+        Transistors = new ObservableCollection<TransistorRow>(rows);
         TotalMatches = totalCount;
-        LoadedMatches = Transistors.Count;
+        LoadedMatches = rows.Count;
     }
 
     private TransistorRow CreateRowFromObject(object item)
